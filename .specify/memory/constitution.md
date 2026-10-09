@@ -1,50 +1,86 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version change: Unratified → 1.0.0 (initial ratification)
+- Added principles: I. Zero Backend; II. Battery-Efficient Background Monitoring;
+  III. Meaningful Notifications; IV. Accurate and Transparent Data;
+  V. Simplicity and Privacy; VI. Quality and Maintainability.
+- Added sections: MVP Scope; Development Workflow and Compliance.
+- Removed sections: None.
+- Follow-up TODOs: None.
+-->
+
+# Oh My Haze Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Zero Backend
+All application functionality MUST run natively on Android. The app MUST NOT
+depend on backend servers, cloud functions, authentication, or hosted databases.
+It MUST use free, publicly accessible air-quality APIs that require no API key,
+and MUST store preferences and monitoring state locally. This keeps the service
+independent of backend operations and limits data collection.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Battery-Efficient Background Monitoring
+The app MUST use WorkManager to schedule checks at a 30–60 minute interval,
+treated as best-effort under Android scheduling. It MUST NOT use continuous GPS,
+foreground services, or unnecessary background work. Automatic station selection
+MUST resolve the nearest station when needed and cache that selection. Checks
+MUST minimize network requests and battery use.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Meaningful Notifications
+The app MUST notify users only when a valid, non-stale reading crosses a worsening
+threshold or severity category. It MUST persist alert state locally to prevent
+duplicate alerts and MUST respect notification permission and user preferences.
+Invalid, missing, or stale readings MUST NOT trigger alerts.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Accurate and Transparent Data
+The app MUST use Malaysia’s Air Pollutant Index (API/IPU) as its primary
+indicator and MUST NOT conflate it with US AQI. It MUST display the reading,
+classification, monitoring station, and observation timestamp. Missing, outdated,
+or unavailable data MUST be clearly identified. The interface MUST explain that
+a station reading represents its area and is not an exact measurement at the
+user’s coordinates.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simplicity and Privacy
+The app MUST use Kotlin, Jetpack Compose, WorkManager, and DataStore, and MUST
+prefer Android-native capabilities and minimal dependencies. It MUST request
+location only when needed to select a station and MUST support manual station
+selection. It MUST NOT include analytics, advertising SDKs, or unnecessary data
+collection. Interfaces MUST provide accessible labels and MUST NOT use color as
+the sole way to communicate air-quality severity.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. Quality and Maintainability
+Kotlin code MUST be readable and idiomatic, and architecture MUST remain simple
+and modular. Changes to alert thresholds, station selection, stale-data handling,
+or duplicate prevention MUST include automated tests for the affected critical
+logic. Feature development MUST follow GitHub Spec Kit.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## MVP Scope
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+The MVP MUST provide a current Malaysian API/IPU reading; automatic or manual
+station selection; background monitoring on a best-effort 30–60 minute cadence;
+local notifications when conditions worsen; and visible monitoring status and
+last successful check. Historical trends, forecasts, advanced notification
+preferences, and iOS support are outside the MVP and require a separately
+approved specification before implementation.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow and Compliance
+
+Each feature MUST have a GitHub Spec Kit specification, plan, and task list
+before implementation. Those artifacts MUST define acceptance criteria for
+data freshness, battery-aware scheduling, privacy, and notification behavior
+where applicable. Reviews MUST verify that changes comply with this constitution
+and the approved feature artifacts. Any conflict MUST be resolved by amending
+the governing artifact before implementation proceeds.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution governs project decisions and takes precedence over conflicting
+feature artifacts. Amendments MUST be reviewed with a sync impact report and
+updated version metadata. Versioning follows semantic versioning: MAJOR for
+backward-incompatible principle or governance changes, MINOR for added principles
+or materially expanded requirements, and PATCH for clarifications and wording
+changes. Every specification, plan, task list, and implementation review MUST
+check compliance with these rules.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-09 | **Last Amended**: 2026-10-09
