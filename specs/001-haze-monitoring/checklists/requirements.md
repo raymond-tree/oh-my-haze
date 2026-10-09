@@ -39,8 +39,10 @@ satisfied; it does not mean implementation work is complete.
 
 - The spec names no data endpoint, language, library, or application architecture;
   platform and no-secret-source constraints come from the user and constitution.
-- The exact free, public Malaysian API/IPU source and its update cadence must be
-  confirmed during planning; the two-hour stale cutoff is an initial assumption.
+- Planning must verify the API/IPU source, station names/coordinates, timestamps,
+  keyless access, acceptable terms/availability, and direct Android-client access;
+  the two-hour stale cutoff is an initial assumption. No suitable API means an
+  implementation blocker, not an architecture change.
 - Confirm the minimum supported Android version and compatibility matrix during
   planning.
 - No implementation plan, task list, or application code was created.

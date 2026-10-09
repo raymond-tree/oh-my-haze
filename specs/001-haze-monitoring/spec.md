@@ -1,6 +1,6 @@
 # Feature Specification: Haze Monitoring MVP
 
-**Feature Branch**: `main`
+**Feature Branch**: `spec`
 
 **Created**: 2026-10-09
 
@@ -130,19 +130,22 @@ station-change cases; verify the notification sequence and in-app status.
 **Acceptance Scenarios**:
 
 1. **Given** the first fresh, valid observation for a station is already
-   Unhealthy or worse, **When** it is received, **Then** the app shows the
-   concerning state but does not send a push notification claiming that
-   conditions worsened.
+   Unhealthy (API/IPU 101 or higher), **When** it is received, **Then** the app
+   displays a prominent in-app warning explaining the current conditions and
+   does not send a worsening notification for the initial baseline.
 2. **Given** a baseline of Good or Moderate, **When** a newer fresh observation
-   enters Unhealthy, **Then** one Unhealthy alert is shown; it appears in the app
-   while the app is foregrounded and as a local notification otherwise, if
-   notifications are enabled and permitted.
+   enters Unhealthy, **Then** exactly one local Android notification is sent if
+   notifications are enabled and permitted, whether the app is foregrounded or
+   backgrounded; the app does not also show a duplicate in-app event alert.
 3. **Given** conditions have reached Unhealthy, **When** a newer fresh observation
-   enters Very Unhealthy or Hazardous, **Then** one notification is sent for the
-   highest newly reached category.
+   enters Very Unhealthy or Hazardous, **Then** exactly one local Android
+   notification is sent for the highest newly reached category if notifications
+   are enabled and permitted, regardless of app visibility, without a duplicate
+   in-app event alert.
 4. **Given** one observation jumps across multiple worsening categories,
-   **When** it is processed, **Then** only one alert is shown for the highest
-   newly reached category.
+   **When** it is processed, **Then** only one local notification is sent for
+   the highest newly reached category if notifications are enabled and permitted,
+   with no duplicate in-app event alert.
 5. **Given** observations remain in the same category, are duplicates, are older
    than the last accepted observation, or are stale or invalid, **When** they are
    checked, **Then** no worsening notification is sent.
@@ -156,11 +159,15 @@ station-change cases; verify the notification sequence and in-app status.
 8. **Given** the selected station changes, **When** its reading is evaluated,
    **Then** it is compared only with that station's own alert history and never
    with the previous station's reading.
-9. **Given** notification permission is denied or notifications are disabled,
+9. **Given** the user returns to a previously selected station whose last
+   accepted observation is more than 24 hours old, **When** the next fresh
+   observation arrives, **Then** it becomes a new baseline, the current severity
+   is displayed, and no worsening notification is sent for that observation.
+10. **Given** notification permission is denied or notifications are disabled,
    **When** conditions worsen, **Then** no system notification is sent, current
    severity remains visible in the app, monitoring continues, and notification
    status is visible in settings.
-10. **Given** a worsening notification is tapped, **When** the app opens,
+11. **Given** a worsening notification is tapped, **When** the app opens,
     **Then** the user reaches the current air-quality view for the station that
     generated the alert.
 
@@ -190,7 +197,9 @@ source, and verify the loading, success, failure, and retained-reading states.
    observation time and a clear status.
 4. **Given** refresh returns a new valid reading, **When** it is displayed,
    **Then** the reading and its observation and retrieval times are updated; the
-   app shows an in-app worsening alert if a threshold is crossed.
+   app sends a local Android notification if a worsening threshold is crossed
+   and notifications are enabled and permitted, without also showing a
+   duplicate in-app event alert.
 
 ---
 
@@ -250,7 +259,9 @@ state and subsequent monitoring or alert behavior match the user's choice.
 - **FR-005**: Readings MUST come from a free, publicly accessible Malaysian data
   source that requires no account, app credential, or API key. Oh My Haze MUST NOT
   require its own hosted service or hosted database to retrieve readings and MUST
-  NOT substitute US AQI or an unidentified forecast for Malaysian API/IPU.
+  NOT substitute US AQI or an unidentified forecast for Malaysian API/IPU. Before
+  implementation, planning MUST verify the selected source against the Data
+  Source API Planning Prerequisite below.
 - **FR-006**: The app MUST classify API/IPU values as follows: 0–50 Good; 51–100
   Moderate; 101–200 Unhealthy; 201–300 Very Unhealthy; and above 300 Hazardous.
   Each category MUST use a distinct, consistent colour and a visible text label.
@@ -283,14 +294,16 @@ state and subsequent monitoring or alert behavior match the user's choice.
 - **FR-014**: For a station with an established baseline, any fresh observation
   from automatic monitoring or manual refresh MUST alert on a worsening
   transition into Unhealthy (101+), Very Unhealthy (201+), or Hazardous (301+).
-  While the app is foregrounded, the alert MUST be shown in the app; otherwise,
-  it MUST be sent as a local notification if notifications are enabled and
-  permitted. A single observation that jumps across multiple thresholds MUST
-  produce at most one alert for the highest newly reached category.
+  If notifications are enabled and permitted, exactly one local Android
+  notification MUST be sent regardless of whether the app is foregrounded or
+  backgrounded. The app MUST NOT also show a duplicate in-app event alert for
+  the same transition. A single observation that jumps across multiple
+  thresholds MUST produce at most one notification for the highest newly
+  reached category.
 - **FR-015**: The first fresh, valid observation for each station MUST establish
-  its baseline. If that reading is already Unhealthy or worse, the app MUST show
-  an in-app warning but MUST NOT send a worsening notification solely for that
-  first observation.
+  its baseline. If that reading is Unhealthy (API/IPU 101 or higher), the app
+  MUST show a prominent in-app warning explaining the current conditions but
+  MUST NOT send a worsening notification solely for that first observation.
 - **FR-016**: The app MUST suppress repeat alerts while a threshold remains
   reached. Each threshold MUST rearm only after a fresh observation falls below
   it: API/IPU 100 or lower for Unhealthy, 200 or lower for Very Unhealthy, and
@@ -299,6 +312,10 @@ state and subsequent monitoring or alert behavior match the user's choice.
   for that station and no more than two hours old may affect alert state. Missing,
   invalid, stale, duplicate, or older observations and missed checks MUST NOT
   trigger alerts or change the baseline. Alert history MUST be station-specific.
+  If the previous accepted observation is more than 24 hours old when a new
+  fresh observation arrives, the previous baseline MUST expire: the new
+  observation MUST establish a baseline and its current severity MUST be
+  displayed without a worsening notification.
 - **FR-018**: If notifications are disabled or system permission is denied, the
   app MUST continue monitoring where permitted, update its alert state without
   queuing a later duplicate system notification, keep current severity visible,
@@ -314,6 +331,22 @@ state and subsequent monitoring or alert behavior match the user's choice.
 - **FR-021**: Severity MUST be communicated through text as well as colour, and
   essential controls and status information MUST be accessible to assistive
   technology.
+
+#### Data Source API Planning Prerequisite
+
+Before implementation, planning MUST verify that the selected Malaysian
+air-quality API provides:
+
+- Malaysian API/IPU readings.
+- Station names and coordinates.
+- Observation timestamps.
+- Free, keyless public access.
+- Acceptable usage terms and availability.
+- Reliable access directly from an Android client.
+
+If no source satisfies all criteria, implementation MUST pause and the blocker
+MUST be reported. The project MUST NOT silently change the architecture or
+introduce a backend to work around the missing source.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -340,9 +373,11 @@ state and subsequent monitoring or alert behavior match the user's choice.
 - **SC-003**: 100% of readings older than two hours are labelled outdated, and
   no stale, missing, or invalid reading triggers a worsening alert.
 - **SC-004**: With notifications enabled and permitted, each eligible worsening
-  transition produces exactly one alert for the highest newly reached category
-  before rearming; unchanged categories produce no repeat alert, and the first
-  already-unhealthy observation produces zero worsening alerts.
+  transition produces exactly one local notification for the highest newly
+  reached category before rearming, whether the app is foregrounded or
+  backgrounded; no duplicate in-app event alert is shown. An initial
+  already-unhealthy baseline always produces a prominent in-app warning and
+  zero worsening notifications.
 - **SC-005**: When notification permission is denied, zero system notifications
   are delivered while monitoring status and current readings remain available.
 - **SC-006**: Automatic monitoring makes no more than 24 scheduled checks in any
@@ -353,15 +388,16 @@ state and subsequent monitoring or alert behavior match the user's choice.
   refreshes preserve the last valid reading in 100% of cases.
 - **SC-008**: 100% of overlapping manual and scheduled checks for the same
   station result in one network request, not duplicate requests.
+- **SC-009**: In 100% of cases where a station's previous accepted observation is
+  more than 24 hours old, the first fresh observation establishes a new baseline,
+  displays current severity, and produces no worsening notification.
 
 ## Assumptions
 
-- The exact free, keyless public source is not selected in this specification.
-  Planning must confirm a source that provides Malaysian station-level API/IPU
-  readings, a station directory with locations, and observation timestamps, and
-  verify that its publication cadence supports the two-hour stale default. The
-  station directory must support local nearest-station selection without
-  transmitting the user's precise coordinates.
+- No public data source has been selected yet. The API validation gate above
+  must pass before implementation; its update cadence must also support the
+  two-hour stale default. The station directory must support local
+  nearest-station selection without transmitting the user's precise coordinates.
 - The minimum supported Android version and device compatibility matrix are
   planning decisions and must be set before implementation.
 - Two hours is the initial stale cutoff because the target monitoring cadence is
@@ -370,10 +406,12 @@ state and subsequent monitoring or alert behavior match the user's choice.
 - If the first observation is already Unhealthy or worse, an in-app warning is
   sufficient; no worsening notification is sent until a later threshold crossing.
 - A newly selected station with no prior history establishes its own baseline.
-  Returning to a previously selected station resumes that station's alert state.
-- A manual refresh updates the visible reading and station baseline. If it finds
-  a worsening transition while the app is open, the app shows an in-app alert
-  instead of a system notification.
+  Returning to a previously selected station resumes its alert state only while
+  the last accepted observation is no more than 24 hours old; older state expires
+  and the next fresh observation establishes a new baseline.
+- A manual refresh follows the same threshold and notification rules as an
+  automatic check. A worsening transition produces a local notification when
+  permitted, even while the app is open, without a duplicate in-app event alert.
 - Monitoring can be delayed or unavailable due to Android scheduling, device
   state, permissions, connectivity, or source availability; the interface must
   describe the actual status without promising uninterrupted checks.
