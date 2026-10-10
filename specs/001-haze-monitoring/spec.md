@@ -6,415 +6,452 @@
 
 **Status**: Draft
 
-**Input**: User description: Initial MVP for Oh My Haze, a native Android app for Malaysian air-quality monitoring and worsening-condition alerts.
+**Input**: User description: Revise Oh My Haze to monitor a user-saved location with Open-Meteo model-based US AQI estimates and best-effort local alerts.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Choose a Monitoring Station (Priority: P1)
+### User Story 1 - Choose a Monitoring Location (Priority: P1)
 
-As a user, I want a nearby monitoring station selected for me, or to choose one
-myself, so that the reading and alerts are relevant to the place I care about.
+As a user, I want to choose the place I care about so that the app monitors
+air-quality estimates for that saved place without following my movements.
 
-**Why this priority**: A station is required before the app can provide a local
-reading or monitor for worsening conditions.
+**Why this priority**: A saved location is required before the app can show a
+useful estimate or monitor for worsening conditions.
 
-**Independent Test**: Complete setup with location permission granted and confirm
-the nearest available station is selected. Repeat with permission denied and
-confirm that manual selection still enables use.
+**Independent Test**: Complete onboarding once with foreground location granted
+and once with it denied. In both cases, confirm that the user can save a
+monitoring location, receive an estimate, and keep that location unchanged while
+the device moves.
 
 **Acceptance Scenarios**:
 
-1. **Given** a supported Android device, **When** the user installs and opens
-   Oh My Haze, **Then** the app presents its native Android setup flow.
-2. **Given** setup explains why location is requested and the user grants
-   permission, **When** available stations are found, **Then** the nearest station
-   is selected and its name and location are shown.
-3. **Given** location permission is denied or unavailable, **When** the user
-   continues setup, **Then** the app offers manual station selection and does
-   not require location permission to show readings.
-4. **Given** a station is already selected, **When** ordinary monitoring checks
-   run, **Then** the selected station is reused without another location request.
-5. **Given** the user has travelled, **When** they explicitly refresh their
-   location, **Then** the nearest available station is selected and displayed.
-6. **Given** a user-selected station, **When** the app is reopened, **Then** that
-   station remains selected.
-7. **Given** location is used to choose a station, **When** selection is
-   complete, **Then** the app retains the station choice without retaining the
-   user's precise coordinates or transmitting them to the data source.
+1. **Given** a first-time user opens Oh My Haze, **When** onboarding begins,
+   **Then** the app explains that it uses model-based estimates and checks the
+   saved location approximately hourly before offering to use the current
+   location or choose a place manually.
+2. **Given** the user chooses “Use current location”, **When** location is
+   required, **Then** the app requests foreground approximate location
+   permission, obtains one location fix, and saves the selected coordinates
+   locally.
+3. **Given** location permission is denied, unavailable, or not preferred,
+   **When** the user continues onboarding, **Then** the app offers a built-in
+   list of Malaysian localities with bundled coordinates and does not require a
+   paid geocoding service, map, or location permission.
+4. **Given** a current-location or manual choice is saved, **When** the user
+   restarts the app or the device, **Then** the saved monitoring location is
+   retained where Android permits and remains the location used by monitoring.
+5. **Given** the user travels while a monitoring location is saved, **When** a
+   background check runs, **Then** it reuses the saved coordinates and does not
+   read or continuously track the device's physical location.
+6. **Given** the user explicitly chooses to update the location, **When** they
+   select current location or another bundled locality, **Then** only that
+   action changes the saved monitoring location and its alert baseline.
+7. **Given** the app is about to send a location request, **When** the user
+   reviews onboarding, **Then** the app explains that saved coordinates are sent
+   directly to Open-Meteo for each check and that the app has no account or
+   backend service.
 
 ---
 
-### User Story 2 - Understand Current Air Quality (Priority: P1)
+### User Story 2 - Understand the Current US AQI Estimate (Priority: P1)
 
-As a user, I want to see the current Malaysian API/IPU reading and its age so I
-can quickly understand whether conditions are concerning.
+As a user, I want to understand the current US AQI estimate, its age, and what
+it represents so I can make sense of conditions near my saved location.
 
-**Why this priority**: The current reading and its provenance are the core
+**Why this priority**: A clear, honestly described current estimate is the core
 information the app exists to provide.
 
-**Independent Test**: Show a valid, stale, and unavailable reading for a selected
-station and verify that each state is clearly distinguishable.
+**Independent Test**: Display a valid estimate, an old estimate, an invalid
+response, and an unavailable response. Confirm the US AQI label, category,
+location, model-valid time, last check time, attribution, and uncertainty are
+clear in each state.
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid reading is available, **When** the home screen opens,
-   **Then** it shows the API/IPU value, classification, station name and location,
-   data source, observation time, and last successful check time as distinct
-   timestamps.
-2. **Given** a reading is more than two hours older than the current check,
-   **When** it is displayed, **Then** it is clearly marked outdated and is not
-   described as current.
-3. **Given** the source has no usable reading, **When** the home screen opens,
-   **Then** it shows an unavailable state and does not substitute another index,
-   a forecast, or fabricated data.
-4. **Given** a previous valid reading exists and a later retrieval fails,
-   **When** the failure is shown, **Then** the previous value and its original
-   observation time remain visible with an outdated or unavailable status.
-5. **Given** the source returns a negative value, malformed reading, unknown
-   station, or future observation time, **When** the response is received,
-   **Then** it is rejected as invalid, does not replace the previous reading,
-   and cannot trigger an alert.
-6. **Given** the public source provides Malaysian station readings,
-   **When** a reading is requested, **Then** it is available without an Oh My
-   Haze account or private credential.
-7. **Given** readings at the category boundaries, **When** they are displayed,
-   **Then** each has the correct category, visible text label, and a distinct,
-   consistent category colour, with severity never conveyed by colour alone.
-8. **Given** a station reading is displayed, **When** the user views its details,
-   **Then** the app explains that the reading represents the station's area and
-   is not an exact measurement at the user's coordinates.
+1. **Given** a valid current value is available, **When** the home screen opens,
+   **Then** it shows the numeric value labelled **US AQI**, its category, the
+   saved monitoring location, the model-valid time, the last successful check
+   time, and the data source as distinct details.
+2. **Given** the estimate is displayed, **When** the user views its details,
+   **Then** the app explains that Open-Meteo supplies model-based estimates from
+   a regional grid, not a measurement taken at the user's exact location, and
+   clearly attributes Open-Meteo and CAMS.
+3. **Given** the model-valid time is more than 18 hours old, **When** the estimate
+   is displayed, **Then** it is marked stale and cannot trigger a worsening
+   notification. The 18-hour cutoff allows a buffer around the published
+   approximately 12-hour global model update schedule.
+4. **Given** an automatic check has not succeeded for more than two hours,
+   **When** the home screen opens, **Then** the monitoring check is separately
+   marked delayed even if the last stored estimate's model-valid time remains
+   within its freshness window.
+5. **Given** a newer retrieval fails or omits a usable current value or model
+   time, **When** the failure is shown, **Then** the last valid estimate and its
+   original timestamps remain visible with a clear stale or unavailable status.
+6. **Given** the provider returns a negative, non-finite, malformed, future-dated,
+   missing, or null AQI value or timestamp, **When** the response is processed,
+   **Then** it is rejected, does not replace the last valid estimate, and cannot
+   trigger an alert.
+7. **Given** category-boundary values are displayed, **When** the user views the
+   reading, **Then** each value has the correct category name and a distinct,
+   consistent colour, with severity never conveyed by colour alone.
+8. **Given** the provider returns an AQI above 500, **When** it is displayed,
+   **Then** the original number is preserved and the category is Hazardous.
+9. **Given** the provider returns a finite fractional AQI, **When** it is
+   displayed and evaluated for alerts, **Then** category and alert evaluation
+   use the nearest whole-number US AQI, with nonnegative half values rounded up
+   (for example, 100.5 classifies as 101 and Unhealthy for Sensitive Groups).
+   Values above 500 remain visible as returned and classify as Hazardous.
 
 ---
 
 ### User Story 3 - Monitor Conditions Automatically (Priority: P1)
 
-As a user, I want monitoring to continue when I am not using the app so I can
-learn about worsening conditions without repeatedly checking.
+As a user, I want monitoring to continue when I am not using the app so I do not
+need to repeatedly open it to check whether conditions have worsened.
 
-**Why this priority**: Automatic monitoring and timely alerts are the product's
-main value.
+**Why this priority**: Background monitoring and timely alerts deliver the
+primary value proposition.
 
-**Independent Test**: Enable monitoring for a selected station, put the app in
-the background, and verify monitoring status, check results, and persistence
-across an app restart and a supported device reboot.
+**Independent Test**: Enable monitoring, background and close the app, restart
+the device, and verify saved-location reuse, best-effort check status, and local
+state persistence under supported Android conditions.
 
 **Acceptance Scenarios**:
 
-1. **Given** setup is complete and a station is selected, **When** onboarding
-   finishes, **Then** monitoring is enabled by default and the target check
-   interval is 60 minutes.
-2. **Given** monitoring is enabled, **When** the app is backgrounded, removed
-   from recent apps, or the device restarts, **Then** monitoring resumes when
-   platform conditions permit and the app does not claim an exact execution time.
-3. **Given** a station is already selected, **When** an automatic check runs,
-   **Then** it checks that station without repeatedly requesting location.
+1. **Given** onboarding is complete, **When** monitoring starts, **Then** checks
+   are scheduled approximately every 60 minutes on a best-effort basis.
+2. **Given** the app is backgrounded, removed from recent apps, or the device
+   restarts, **When** Android permits background work, **Then** monitoring
+   resumes without promising an exact execution time.
+3. **Given** monitoring is enabled, **When** an automatic check runs, **Then** it
+   uses the saved coordinates without requesting location again.
 4. **Given** the user disables monitoring, **When** a scheduled check would run,
-   **Then** no automatic check is made; manual refresh remains available.
-5. **Given** monitoring is enabled or disabled, **When** the user opens the app,
-   **Then** the current monitoring state and last successful check are visible.
+   **Then** no automatic request is made while manual refresh remains available.
+5. **Given** Android battery controls delay or prevent work, **When** the user
+   opens the app, **Then** the monitoring status and last successful check make
+   the delay or unavailability clear.
+6. **Given** a request fails, **When** the worker records the failure, **Then**
+   it does not enter a rapid automatic retry loop and waits for a later
+   scheduled or user-requested check.
 
 ---
 
-### User Story 4 - Receive Worsening-Condition Alerts (Priority: P1)
+### User Story 4 - Receive Alerts When Conditions Worsen (Priority: P1)
 
-As a user, I want a local notification when a fresh reading crosses into a more
-serious API/IPU category, without repeated alerts for unchanged conditions.
+As a user, I want one local notification when a fresh estimate worsens into an
+alert-eligible US AQI category, without duplicate or catch-up alerts.
 
-**Why this priority**: Alerts deliver the promised value when users are away from
-the app.
+**Why this priority**: Alerts let users learn about worsening conditions
+without repeatedly checking the app.
 
-**Independent Test**: Feed a station a sequence of valid observations across
-category boundaries, including repeated, stale, missing, improving, and
-station-change cases; verify the notification sequence and in-app status.
+**Independent Test**: Feed the alert logic fresh, duplicate, stale, invalid,
+improving, and worsening model-valid readings at every US AQI threshold. Verify
+the baseline, sensitivity floor, notification sequence, and rearming behavior.
 
 **Acceptance Scenarios**:
 
-1. **Given** the first fresh, valid observation for a station is already
-   Unhealthy (API/IPU 101 or higher), **When** it is received, **Then** the app
-   displays a prominent in-app warning explaining the current conditions and
-   does not send a worsening notification for the initial baseline.
-2. **Given** a baseline of Good or Moderate, **When** a newer fresh observation
-   enters Unhealthy, **Then** exactly one local Android notification is sent if
-   notifications are enabled and permitted, whether the app is foregrounded or
-   backgrounded; the app does not also show a duplicate in-app event alert.
-3. **Given** conditions have reached Unhealthy, **When** a newer fresh observation
-   enters Very Unhealthy or Hazardous, **Then** exactly one local Android
-   notification is sent for the highest newly reached category if notifications
-   are enabled and permitted, regardless of app visibility, without a duplicate
-   in-app event alert.
-4. **Given** one observation jumps across multiple worsening categories,
-   **When** it is processed, **Then** only one local notification is sent for
-   the highest newly reached category if notifications are enabled and permitted,
-   with no duplicate in-app event alert.
-5. **Given** observations remain in the same category, are duplicates, are older
-   than the last accepted observation, or are stale or invalid, **When** they are
-   checked, **Then** no worsening notification is sent.
-6. **Given** a previously triggered threshold has been crossed downward,
-   **When** a later fresh observation crosses it upward again, **Then** that
-   threshold may alert again; each threshold rearms only after conditions fall
-   below it.
-7. **Given** one or more scheduled checks were missed, **When** the next reading
-   arrives, **Then** missed checks alone do not change alert state; only a newer,
-   fresh, valid observation can trigger an alert.
-8. **Given** the selected station changes, **When** its reading is evaluated,
-   **Then** it is compared only with that station's own alert history and never
-   with the previous station's reading.
-9. **Given** the user returns to a previously selected station whose last
-   accepted observation is more than 24 hours old, **When** the next fresh
-   observation arrives, **Then** it becomes a new baseline, the current severity
-   is displayed, and no worsening notification is sent for that observation.
-10. **Given** notification permission is denied or notifications are disabled,
-   **When** conditions worsen, **Then** no system notification is sent, current
-   severity remains visible in the app, monitoring continues, and notification
-   status is visible in settings.
-11. **Given** a worsening notification is tapped, **When** the app opens,
-    **Then** the user reaches the current air-quality view for the station that
-    generated the alert.
+1. **Given** the first fresh, valid estimate for a saved location is already
+   Unhealthy for Sensitive Groups (US AQI 101 or higher), **When** it establishes
+   the baseline, **Then** the app shows an in-app warning and sends no worsening
+   notification for that initial baseline.
+2. **Given** the default sensitivity floor is 101 and a baseline is below it,
+   **When** a newer fresh estimate first crosses 101, 151, 201, or 301, **Then**
+   exactly one local notification is sent for the highest newly reached
+   alert-eligible category, if notifications are enabled and permitted.
+3. **Given** one fresh estimate jumps across more than one alert-eligible
+   category, **When** it is processed, **Then** at most one notification is sent
+   for the highest newly reached eligible category.
+4. **Given** the user selects a higher sensitivity floor, **When** a newer
+   estimate crosses a category below that floor, **Then** no notification is
+   sent for that category, while crossings at or above the selected floor remain
+   eligible.
+5. **Given** an eligible threshold has been reached, **When** later estimates
+   remain in that category or worsen without crossing another eligible category,
+   **Then** no duplicate notification is sent for that threshold.
+6. **Given** a fresh estimate falls below a reached category and later crosses
+   that category upward again, **When** the new crossing is processed, **Then**
+   that category may alert again.
+7. **Given** a first valid estimate is already at or above the selected
+   sensitivity floor, **When** it establishes a baseline, **Then** the current
+   severity is visible in the app and no catch-up notification is sent.
+8. **Given** notification permission or the app notification setting is denied,
+   disabled, or restricted, **When** conditions worsen, **Then** the app updates
+   its alert state without queuing a later notification; restoring permission
+   does not send a catch-up notification.
+9. **Given** the previous accepted model-valid time for the saved location is
+   more than 24 hours old, **When** the next fresh estimate arrives, **Then** it
+   establishes a new baseline, displays its current severity, and sends no
+   worsening notification for that estimate.
+10. **Given** a delivered notification is tapped, **When** Oh My Haze opens,
+    **Then** the user reaches the current view for the location that generated
+    the alert.
 
 ---
 
-### User Story 5 - Refresh a Reading Manually (Priority: P1)
+### User Story 5 - Refresh and Manage Monitoring (Priority: P2)
 
-As a user, I want to request a fresh reading on demand so I can check conditions
-without waiting for the next automatic monitoring cycle.
+As a user, I want to refresh the estimate and manage a small set of monitoring
+and alert settings.
 
-**Why this priority**: A manual check gives users control and makes the app useful
-when travelling or when they want confirmation.
+**Why this priority**: Manual checks and a few clear settings make the MVP useful
+when the user wants confirmation or needs to control battery and notifications.
 
-**Independent Test**: Request a refresh with a working source and with a failing
-source, and verify the loading, success, failure, and retained-reading states.
-
-**Acceptance Scenarios**:
-
-1. **Given** a station is selected, **When** the user activates refresh,
-   **Then** the app shows progress and then a clear success or failure result.
-2. **Given** a manual refresh or automatic check is already in progress for the
-   selected station, **When** another check for that station is requested,
-   **Then** the app reuses the in-progress check instead of issuing a duplicate
-   request.
-3. **Given** a valid prior reading exists and refresh fails, **When** the failure
-   is shown, **Then** the prior reading remains visible with its original
-   observation time and a clear status.
-4. **Given** refresh returns a new valid reading, **When** it is displayed,
-   **Then** the reading and its observation and retrieval times are updated; the
-   app sends a local Android notification if a worsening threshold is crossed
-   and notifications are enabled and permitted, without also showing a
-   duplicate in-app event alert.
-
----
-
-### User Story 6 - Manage Basic Settings (Priority: P2)
-
-As a user, I want a small set of clear controls so I can manage monitoring,
-notifications, and my selected station.
-
-**Why this priority**: Basic controls let users manage battery use and alert
-delivery without making setup complicated.
-
-**Independent Test**: Change each available setting and verify that the displayed
-state and subsequent monitoring or alert behavior match the user's choice.
+**Independent Test**: Refresh with working, slow, and failing network states;
+change each setting; and verify subsequent UI, requests, and alert behavior.
 
 **Acceptance Scenarios**:
 
-1. **Given** settings are open, **When** the user changes monitoring or
-   notifications, **Then** the updated state is shown and respected.
-2. **Given** settings are open, **When** the user views or changes the station,
-   **Then** the current selection is clear and a manual replacement is available.
-3. **Given** system notification permission is denied, **When** the user views
-   settings, **Then** the permission status and its effect on alert delivery are
-   explained.
-4. **Given** a user navigates the home screen and settings with assistive
-   technology, **When** they inspect severity, monitoring state, and controls,
-   **Then** each has an accessible text label and usable name.
+1. **Given** a saved monitoring location exists, **When** the user requests a
+   manual refresh, **Then** the app shows progress followed by a clear success
+   or failure state.
+2. **Given** a check for that location is already in progress, **When** another
+   manual or scheduled check is requested, **Then** the app reuses or joins the
+   in-progress request instead of issuing a duplicate.
+3. **Given** a manual check returns a newer valid estimate, **When** it is
+   processed, **Then** it follows the same baseline, freshness, and notification
+   rules as an automatic check.
+4. **Given** settings are open, **When** the user changes monitoring,
+   notifications, sensitivity, or saved location, **Then** the displayed state
+   and subsequent behavior reflect that choice.
+5. **Given** Android notification permission is unavailable or disabled,
+   **When** settings are open, **Then** the app explains that system alerts
+   cannot be delivered and shows their availability separately from monitoring.
+6. **Given** a user navigates the home screen and settings with assistive
+   technology, **When** they inspect severity, monitoring, and controls, **Then**
+   each has a descriptive accessible label.
 
 ### Edge Cases
 
-- No nearby stations are returned, or the selected station is no longer available.
-- The user denies location permission, turns it off later, or has no usable location.
-- The device is offline, the public data source is unavailable, or a response is
-  missing required reading, station, or observation-time information.
-- A source returns a malformed, negative, future-dated, or duplicate observation.
-- A reading is more than two hours old, including after multiple missed checks.
-- Monitoring or notification permission is unavailable, revoked, or disabled.
-- The app or device restarts while monitoring is enabled or an alert threshold is
-  active.
-- The user changes stations while one station has stale data or active alert state.
-- A manual refresh and an automatic check overlap for the same selected station.
+- The user has no usable current location, denies permission, chooses
+  approximate location, or later revokes permission.
+- The device travels after onboarding; the saved monitoring location must not
+  silently follow it.
+- The requested coordinate maps to a nearby model grid cell; the returned grid
+  coordinate differs from the saved coordinate.
+- The API returns no current object, an absent/null AQI value, a non-finite or
+  negative number, an invalid timestamp, a timestamp too far in the future, or
+  an HTTP/network error.
+- The model-valid time is duplicated, older than the last accepted time, or more
+  than 18 hours old even though the API request itself succeeded.
+- The app's last successful check is delayed while the model-valid time is still
+  within the estimate freshness window, or vice versa.
+- The global model is between its approximately 12-hour updates; hourly checks
+  may return estimates from the same model cycle.
+- The index lands on any category boundary or exceeds 500.
+- A new location is chosen while a check or an alert transition is in progress.
+- The user changes sensitivity while an alert category is already reached.
+- Android notification permission is denied, revoked, disabled in system
+  settings, or restored after an alert was suppressed.
+- Android Doze, battery saver, reboot, connectivity loss, or OEM battery
+  management delays a periodic check.
+- Manual and automatic requests overlap, or the provider returns an error JSON
+  with HTTP 400.
+- Published API limits are approached or provider terms, pricing, or service
+  availability change.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The product MUST be a native Android app focused on Malaysian haze
-  and air-quality monitoring.
-- **FR-002**: Before requesting location permission, the app MUST explain that
-  location is used to select a nearby monitoring station. It MUST request
-  location only during setup or after the user explicitly asks to refresh it.
-- **FR-003**: When location is available and permitted, the app MUST select the
-  nearest available Malaysian monitoring station and show its name and location.
-- **FR-004**: The app MUST allow manual station selection when location is denied,
-  unavailable, or not preferred. It MUST retain the selected station across
-  normal app restarts and MUST NOT continuously track, retain, or transmit the
-  user's precise location after using it locally to select a station.
-- **FR-005**: Readings MUST come from a free, publicly accessible Malaysian data
-  source that requires no account, app credential, or API key. Oh My Haze MUST NOT
-  require its own hosted service or hosted database to retrieve readings and MUST
-  NOT substitute US AQI or an unidentified forecast for Malaysian API/IPU. Before
-  implementation, planning MUST verify the selected source against the Data
-  Source API Planning Prerequisite below.
-- **FR-006**: The app MUST classify API/IPU values as follows: 0–50 Good; 51–100
-  Moderate; 101–200 Unhealthy; 201–300 Very Unhealthy; and above 300 Hazardous.
-  Each category MUST use a distinct, consistent colour and a visible text label.
-- **FR-007**: For the selected station, the app MUST show the current API/IPU
-  value, classification, station name and location, data source, source
-  observation time, and last successful retrieval/check time. The two timestamps
-  MUST be distinguishable. It MUST explain that a station reading represents
-  the station's area, not exact conditions at the user's coordinates.
-- **FR-008**: A reading whose observation time is more than two hours old MUST be
-  marked outdated. The app MUST preserve and label the last valid reading when
-  newer data is unavailable.
-- **FR-009**: For missing stations, unavailable sources, connectivity failures,
-  or invalid responses, the app MUST show a clear unavailable or error state and
-  MUST NOT fabricate a value or present stale data as current. A valid reading
-  MUST contain a nonnegative integer API/IPU value, match a known station, and
-  include a parseable observation time that is not later than its retrieval time.
-- **FR-010**: After onboarding and station selection, background monitoring MUST
-  be enabled by default unless the user disables it.
-- **FR-011**: The target automatic check interval MUST be 60 minutes. Timing is
-  best-effort under Android scheduling; the app MUST NOT promise an exact interval
-  or run more than one scheduled automatic check per hour. Manual refreshes are
-  excluded from this cap.
-- **FR-012**: The app MUST reuse the selected station for automatic checks and
-  MUST keep selected-station, monitoring, notification, and alert state on the
-  device. It MUST persist those choices and the last successful check across
-  normal app restarts and device restarts where Android permits.
-- **FR-013**: Users MUST be able to enable or disable automatic monitoring and
-  separately enable or disable notifications. The app MUST display monitoring
-  status and last successful check.
-- **FR-014**: For a station with an established baseline, any fresh observation
-  from automatic monitoring or manual refresh MUST alert on a worsening
-  transition into Unhealthy (101+), Very Unhealthy (201+), or Hazardous (301+).
-  If notifications are enabled and permitted, exactly one local Android
-  notification MUST be sent regardless of whether the app is foregrounded or
-  backgrounded. The app MUST NOT also show a duplicate in-app event alert for
-  the same transition. A single observation that jumps across multiple
-  thresholds MUST produce at most one notification for the highest newly
-  reached category.
-- **FR-015**: The first fresh, valid observation for each station MUST establish
-  its baseline. If that reading is Unhealthy (API/IPU 101 or higher), the app
-  MUST show a prominent in-app warning explaining the current conditions but
-  MUST NOT send a worsening notification solely for that first observation.
-- **FR-016**: The app MUST suppress repeat alerts while a threshold remains
-  reached. Each threshold MUST rearm only after a fresh observation falls below
-  it: API/IPU 100 or lower for Unhealthy, 200 or lower for Very Unhealthy, and
-  300 or lower for Hazardous.
-- **FR-017**: Only a valid observation newer than the last accepted observation
-  for that station and no more than two hours old may affect alert state. Missing,
-  invalid, stale, duplicate, or older observations and missed checks MUST NOT
-  trigger alerts or change the baseline. Alert history MUST be station-specific.
-  If the previous accepted observation is more than 24 hours old when a new
-  fresh observation arrives, the previous baseline MUST expire: the new
-  observation MUST establish a baseline and its current severity MUST be
-  displayed without a worsening notification.
-- **FR-018**: If notifications are disabled or system permission is denied, the
-  app MUST continue monitoring where permitted, update its alert state without
-  queuing a later duplicate system notification, keep current severity visible,
-  and explain that system alerts cannot be delivered. Tapping a delivered alert
-  MUST open the air-quality view for its station.
-- **FR-019**: The app MUST provide a clear manual refresh action with progress,
-  success, and failure states. It MUST prevent duplicate concurrent refreshes
-  and automatic checks for the same station, reuse an in-progress check where
-  possible, and preserve the last valid reading on failure.
-- **FR-020**: Settings MUST include monitoring enablement, notification
-  enablement, selected-station viewing and change, and notification permission
-  status. Advanced threshold customization is outside the MVP.
-- **FR-021**: Severity MUST be communicated through text as well as colour, and
-  essential controls and status information MUST be accessible to assistive
-  technology.
-
-#### Data Source API Planning Prerequisite
-
-Before implementation, planning MUST verify that the selected Malaysian
-air-quality API provides:
-
-- Malaysian API/IPU readings.
-- Station names and coordinates.
-- Observation timestamps.
-- Free, keyless public access.
-- Acceptable usage terms and availability.
-- Reliable access directly from an Android client.
-
-If no source satisfies all criteria, implementation MUST pause and the blocker
-MUST be reported. The project MUST NOT silently change the architecture or
-introduce a backend to work around the missing source.
+- **FR-001**: Oh My Haze MUST be a native Android app focused on helping users
+  monitor air quality around a location they choose.
+- **FR-002**: Before location permission is requested, onboarding MUST explain
+  why a one-time location fix may be used. The app MUST request only foreground
+  approximate location permission and MUST NOT request background location.
+- **FR-003**: The app MUST save one selected monitoring location's coordinates
+  and display label locally. Background checks MUST use that saved location,
+  which MUST remain distinct from the device's continuously changing physical
+  location.
+- **FR-004**: If current location is denied, unavailable, or not preferred, the
+  user MUST be able to select a location from a bundled locality list without a
+  paid geocoder, map, account, or location permission. Users MUST be able to
+  change the saved location manually at any time.
+- **FR-005**: The app MUST NOT continuously track the user. It MUST obtain a
+  location fix only after the user chooses to use or update current location,
+  and ordinary monitoring MUST NOT access location services.
+- **FR-006**: The primary data source MUST be Open-Meteo's Air Quality API using
+  the selected latitude and longitude and the current `us_aqi` value. Requests
+  MUST use HTTPS directly from the Android app, without an app backend, user
+  account, or API key, and MUST NOT fall back to another provider.
+- **FR-007**: The free endpoint MUST be used only while Oh My Haze remains a
+  strictly non-commercial app. Ads, subscriptions, or use as part of a
+  commercial product or promotion are outside this approval; any such change
+  MUST trigger a new provider and architecture feasibility review before
+  release.
+- **FR-008**: Before sending coordinates, the app MUST tell users that their
+  saved monitoring coordinates are sent directly to Open-Meteo for estimates.
+  It MUST explain that the app has no account or backend and that Open-Meteo may
+  log request coordinates and IP addresses under its published privacy terms.
+- **FR-009**: The app MUST classify US AQI as follows: 0–50 Good; 51–100
+  Moderate; 101–150 Unhealthy for Sensitive Groups; 151–200 Unhealthy;
+  201–300 Very Unhealthy; and 301 or higher Hazardous. If Open-Meteo returns a
+  value above 500, the app MUST display the un-clamped provider value and use
+  Hazardous.
+- **FR-010**: The main view MUST show the reading explicitly labelled **US AQI**,
+  its category, saved location, data source and attribution, the model-valid
+  time, and the last successful check time as distinct information.
+- **FR-011**: The app MUST explain that Open-Meteo supplies model-based estimates
+  over a regional grid, not measurements taken at the user's exact location.
+  It MUST NOT describe the result as an official Malaysian API/IPU reading or as
+  an exact local measurement.
+- **FR-012**: The app MUST mark an estimate stale when its model-valid time is
+  more than 18 hours old. It MUST separately mark monitoring delayed when no
+  check has succeeded for more than two hours. A retrieval time MUST NOT be
+  presented as the model-valid time.
+- **FR-013**: A usable estimate MUST include a numeric, finite, non-negative
+  `current.us_aqi` and a parseable `current.time` that is not more than five
+  minutes in the future. If the numeric value is fractional, the app MUST round
+  it to the nearest whole number (nonnegative halves up) for classification and
+  alert evaluation. It MUST display that rounded index except that any source
+  value above 500 MUST remain visible un-clamped. The timestamp MUST be
+  interpreted using the response timezone or UTC epoch, not the device's default
+  timezone. Missing, null, malformed, non-finite, negative, stale, or invalid
+  values MUST NOT replace the last valid estimate or affect alert state.
+- **FR-014**: The app MUST retain the last valid estimate and its original
+  model-valid and retrieval times when a later request fails, is malformed, or
+  returns no usable current value.
+- **FR-015**: Automatic checks MUST be scheduled approximately every 60 minutes
+  as best-effort background work. The app MUST NOT promise exact execution
+  times, use a foreground service, use continuous GPS, hold wake locks, or run a
+  hosted backend.
+- **FR-016**: Monitoring MUST be enabled by default after onboarding. Users MUST
+  be able to pause and resume it. The app MUST show whether monitoring is
+  enabled, delayed, or unavailable and the time of the last successful check.
+- **FR-017**: The app MUST provide a manual refresh action, clear progress and
+  failure states, preserve the last valid reading on failure, and avoid
+  concurrent duplicate requests for the saved location. Automatic failures
+  MUST NOT cause rapid retry loops.
+- **FR-018**: The default notification sensitivity floor MUST be US AQI 101
+  (Unhealthy for Sensitive Groups). A simple four-choice setting MUST let users
+  select floors of 101, 151, 201, or 301; crossings below the selected floor
+  MUST not notify.
+- **FR-019**: For a saved location with an established baseline, only a newer,
+  valid estimate no more than 18 hours old may change alert state. A worsening
+  transition into a newly reached eligible category MUST send one local Android
+  notification when app and system notification settings permit. A single jump
+  across categories MUST send at most one notification for the highest newly
+  reached eligible category.
+- **FR-020**: The first fresh valid estimate for a location MUST establish its
+  baseline. If it is US AQI 101 or higher, the app MUST show the severity
+  in-app without sending an initial worsening notification. Changing the saved
+  location MUST establish a new baseline for that location.
+- **FR-021**: Each reached alert category MUST suppress duplicates and rearm
+  only after a newer fresh valid estimate returns below its floor (US AQI at or
+  below 100 for the 101 floor, 150 for 151, 200 for 201, and 300 for 301). A
+  category is crossed upward when the
+  previous accepted integer AQI was below its floor and the new accepted AQI
+  reaches or exceeds it. The first valid estimate, and the next fresh estimate
+  after a baseline's model-valid time is more than 24 hours old, MUST establish
+  a silent baseline without a worsening notification. A baseline older than
+  24 hours MUST expire.
+- **FR-022**: If notifications are disabled or unavailable, the app MUST update
+  current severity and alert state without queuing a later system notification.
+  Restoring permission or removing a system restriction MUST NOT produce a
+  catch-up notification for a previously suppressed transition.
+- **FR-023**: The onboarding explanation MUST include the exact text: “Air
+  quality is checked approximately every hour. Android battery settings may
+  delay or occasionally prevent checks and alerts.”
+- **FR-024**: Preferences, selected coordinates, last valid estimate, and alert
+  state MUST be stored on-device. Saved coordinates MUST be excluded from
+  Android cloud backup and device-to-device transfer. No remote database,
+  analytics, account, advertising SDK, push service, maps, charts, forecast
+  screen, or AI feature may be introduced in the MVP.
+- **FR-025**: The app MUST provide a clear notification availability status,
+  meaningful text labels for every AQI category, and accessible names for
+  essential controls and status information.
+- **FR-026**: The app MUST respect Open-Meteo's published non-commercial usage
+  conditions and request limits. It MUST include clear attribution to Open-Meteo
+  and CAMS with the displayed estimate and identify any app-side AQI category
+  labeling as a derived presentation.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Monitoring station**: A Malaysian measurement location with a name, location,
-  and availability for selection.
-- **Air-quality reading**: An API/IPU value and classification associated with a
-  station and named data source, with a source observation time and a separate
-  retrieval/check time.
-- **Monitoring preferences**: The user's selected station and monitoring and
-  notification choices.
-- **Alert threshold state**: Per-station record of the latest accepted reading
-  and which worsening thresholds have alerted or rearmed.
+- **Saved monitoring location**: One user-selected label, latitude, longitude,
+  and selection source (one-time current location or bundled locality); distinct
+  from the device's current physical location.
+- **Air-quality estimate**: The Open-Meteo US AQI value and category, saved
+  monitoring location, provider/grid coordinates when available, model-valid
+  time, last retrieval time, and freshness status.
+- **Monitoring preferences**: Monitoring enabled state, notification enabled
+  state, chosen alert sensitivity floor, and saved monitoring location.
+- **Alert baseline and threshold state**: The latest accepted rounded US AQI
+  value and model-valid time for the saved location. New upward crossings are
+  derived by comparing that baseline with the next fresh accepted value; no
+  per-category notification history is required.
+- **Monitoring status**: Whether background monitoring is enabled, the last
+  successful check time, the last error or delayed/unavailable state, and
+  notification availability.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: In a first-use usability test, at least 90% of participants can
-  identify the current API/IPU category, selected station, reading age, and
-  monitoring status within 15 seconds of opening the home screen.
-- **SC-002**: 100% of tested classification boundary values are displayed in the
-  correct Malaysian API/IPU category; each category uses a distinct, consistent
-  colour, and observation and retrieval times are shown separately.
-- **SC-003**: 100% of readings older than two hours are labelled outdated, and
-  no stale, missing, or invalid reading triggers a worsening alert.
-- **SC-004**: With notifications enabled and permitted, each eligible worsening
-  transition produces exactly one local notification for the highest newly
-  reached category before rearming, whether the app is foregrounded or
-  backgrounded; no duplicate in-app event alert is shown. An initial
-  already-unhealthy baseline always produces a prominent in-app warning and
-  zero worsening notifications.
-- **SC-005**: When notification permission is denied, zero system notifications
-  are delivered while monitoring status and current readings remain available.
-- **SC-006**: Automatic monitoring makes no more than 24 scheduled checks in any
-  24-hour period and makes no repeated location request after a station is
-  selected, excluding an explicit user-requested location refresh.
-- **SC-007**: In a controlled connected test, at least 95% of manual refreshes
-  show a success or understandable failure state within 10 seconds; failed
-  refreshes preserve the last valid reading in 100% of cases.
-- **SC-008**: 100% of overlapping manual and scheduled checks for the same
-  station result in one network request, not duplicate requests.
-- **SC-009**: In 100% of cases where a station's previous accepted observation is
-  more than 24 hours old, the first fresh observation establishes a new baseline,
-  displays current severity, and produces no worsening notification.
+  identify the current US AQI category, saved location, estimate freshness,
+  last successful check, and monitoring status within 15 seconds of opening the
+  home screen.
+- **SC-002**: 100% of tested boundary values (0, 50, 51, 100, 101, 150, 151,
+  200, 201, 300, 301, 500, and a value above 500) display the specified US AQI
+  category and a visible text label. Fractional inputs round to the nearest
+  whole number before the same boundary rules are applied.
+- **SC-003**: 100% of estimates with a model-valid time older than 18 hours are
+  marked stale, and no stale, missing, invalid, duplicate, or older estimate
+  triggers a worsening notification.
+- **SC-004**: For every tested eligible worsening transition, exactly one local
+  notification is sent for the highest newly reached eligible category before
+  rearming; an initial already-unhealthy baseline and any transition suppressed
+  by notification restrictions send zero notifications.
+- **SC-005**: In 100% of location-permission-denied trials, a user can complete
+  location setup from the bundled locality list and obtain an estimate without
+  granting location permission or using a paid external geocoder.
+- **SC-006**: In 100% of background check trials, the app reuses the saved
+  coordinates and does not continuously access device location. Location only
+  changes after a user-requested update.
+- **SC-007**: The interface marks the monitoring check delayed after more than
+  two hours without a successful request and shows the last success time and
+  notification availability in 100% of tested states.
+- **SC-008**: In a controlled connected test, at least 95% of manual refreshes
+  show a success or understandable failure within 10 seconds; all failed
+  refreshes preserve the last valid estimate and timestamps.
+- **SC-009**: 100% of overlapping manual and scheduled checks for the same
+  saved location result in no more than one active network request.
+- **SC-010**: At least 90% of usability-test participants understand that the
+  displayed US AQI is a model-based regional estimate, not a measurement at
+  their exact location or an official Malaysian API/IPU value.
+- **SC-011**: At least 90% of usability-test participants can distinguish the
+  model-valid time from the app's last successful check time.
 
 ## Assumptions
 
-- No public data source has been selected yet. The API validation gate above
-  must pass before implementation; its update cadence must also support the
-  two-hour stale default. The station directory must support local
-  nearest-station selection without transmitting the user's precise coordinates.
-- The minimum supported Android version and device compatibility matrix are
-  planning decisions and must be set before implementation.
-- Two hours is the initial stale cutoff because the target monitoring cadence is
-  hourly; it may be adjusted during planning if the source's published cadence
-  requires it.
-- If the first observation is already Unhealthy or worse, an in-app warning is
-  sufficient; no worsening notification is sent until a later threshold crossing.
-- A newly selected station with no prior history establishes its own baseline.
-  Returning to a previously selected station resumes its alert state only while
-  the last accepted observation is no more than 24 hours old; older state expires
-  and the next fresh observation establishes a new baseline.
-- A manual refresh follows the same threshold and notification rules as an
-  automatic check. A worsening transition produces a local notification when
-  permitted, even while the app is open, without a duplicate in-app event alert.
-- Monitoring can be delayed or unavailable due to Android scheduling, device
-  state, permissions, connectivity, or source availability; the interface must
-  describe the actual status without promising uninterrupted checks.
-- Times are shown in the user's local time zone. iOS, web/PWA, server-driven
-  push, continuous GPS, forecasts, historical charts, maps, accounts,
-  monetization, and AI-generated health advice are outside this MVP.
+- The MVP remains strictly non-commercial: no ads, subscriptions, or use as part
+  of a commercial product or promotional activity. The user confirmed this
+  condition for the current plan. A change in commercial intent requires a new
+  terms and architecture review before release.
+- Open-Meteo's Air Quality API provides the MVP's only air-quality values.
+  Results are model-based estimates. They are not official Malaysian API/IPU
+  measurements and must never be presented as such.
+- Malaysia is the primary audience. The manual fallback is a small bundled list
+  of Malaysian localities and coordinates, not a general-purpose place search.
+- The app requests `current=us_aqi`, uses `domains=cams_global` for Malaysia,
+  and asks Open-Meteo for a timezone resolved from the saved coordinates.
+  It does not display hourly or multi-day forecast screens.
+- The 18-hour estimate-stale cutoff allows a buffer around the published
+  approximately 12-hour CAMS Global model refresh. The provider does not expose
+  a definitive model-run timestamp in the normal current response, so this
+  cutoff measures the age of the returned model-valid time and cannot detect
+  every delayed upstream model cycle.
+- A 24-hour gap expires the alert baseline. Changing locations creates a new
+  baseline rather than comparing values from different places.
+- A sensitivity floor of 101 is the default because it alerts as soon as the
+  estimate reaches Unhealthy for Sensitive Groups; the four category-floor
+  choices add a small, bounded setting without introducing a free-form slider.
+- Automatic checks are best-effort and may be delayed or prevented by Android,
+  device battery policies, network availability, Open-Meteo availability, or
+  published API limits. The app does not promise uninterrupted monitoring.
+- The initial practical minimum Android version is API 24. The implementation
+  plan defines device coverage and validates compatibility before coding.
+- Current checks use model time and retrieval time separately. Times are parsed
+  using provider timezone metadata and displayed in a clear local format.
+- iOS, web/PWA, backend or push services, accounts, advertising, monetization,
+  continuous location, maps, charts, forecasts, historical trends, and AI
+  health advice are outside the MVP.

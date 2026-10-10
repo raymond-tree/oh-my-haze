@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "grill": {
+      "version": "1.0.1",
+      "source": "local",
+      "manifest_hash": "sha256:7d67e2d0659b1e06353d2f81542b51dd5a53f39e3fc3247afd3dbda70016fc91",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "codex": [
+          "speckit.grill.me",
+          "speckit.grill.with-docs"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-10-09T06:56:42.771466+00:00"
+    }
+  }
+}
