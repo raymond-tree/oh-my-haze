@@ -81,24 +81,56 @@ documentation URL builder's ISO 8601 default rather than this planned
 
 Accept only an HTTP success response with valid JSON, a `current` object, a
 finite non-negative numeric `current.us_aqi`, and a parseable numeric
-`current.time` no more than five minutes in the future or 18 hours old. It must
-also be newer than the previously accepted model-valid timestamp before it can
-replace the stored estimate or change the alert baseline. A valid fresh response
-with a duplicate or older model time still updates the successful-check time
-and status but cannot replace the estimate or trigger/change alerts.
+`current.time` no more than five minutes in the future. Record its retrieval
+time as the last successful API check even when the model-valid time is old. A
+timestamp no more than 18 hours old may replace the displayed estimate only if
+it is newer than the displayed model-valid timestamp. When its age is more than
+12 and no more than 18 hours, it is display-only: it cannot change the alert
+baseline or trigger a notification. Beyond 18 hours, do not accept the returned
+estimate; retain the prior displayed estimate and derive its freshness from its
+own model-valid time. Alert evaluation requires a strictly newer
+model-valid timestamp than the latest displayed estimate and alert baseline, an
+age no more than 12 hours, and a genuine upward crossing from the prior
+eligible baseline. A successful request or changed retrieval time alone never
+triggers an alert. A baseline whose model-valid time is over 12 hours old
+expires; the next eligible estimate is a silent baseline.
+
+A well-formed response with a duplicate, older, or more than 18-hour-old model
+time updates the successful-check time and status but cannot replace the
+estimate or change alert state. A well-formed stale response means the provider
+was reached; its model estimate may still be stale.
 
 The public API documentation gives an HTTP 400 JSON error shape containing
 `error` and `reason`. Treat non-2xx responses, invalid JSON, missing/null
-fields, malformed values, and stale model times as unavailable/invalid checks.
-Treat duplicate or older model times as a successful data retrieval but not as
-a newer estimate. Do not map invalid values to AQI 0, overwrite the last
-accepted estimate on duplicate/older data, or trigger an alert. Missing/null behavior is not
+fields, malformed values, and invalid/future timestamps as failed or invalid
+checks. An old but well-formed model time is a successful API check, while the
+estimate itself is marked stale or display-only by its age. Treat duplicate or
+older model times as a successful data retrieval but not as a newer estimate.
+Do not map invalid values to AQI 0, overwrite the last accepted estimate on
+duplicate/older data, or trigger an alert. Missing/null behavior is not
 specified by the provider; defensive rejection is required.
 
-Keep the last successful usable-check time and the accepted estimate's
+Keep the last successful API-check time and the displayed estimate's
 retrieval/model-valid times distinct. Mark monitoring delayed after more than
-two hours without a fresh, well-formed response. No catch-up notification is
-created from failed, stale, invalid, duplicated, or older data.
+two hours without a well-formed response containing valid AQI and model time.
+No catch-up notification is
+created from failed, display-only, stale, invalid, duplicated, or older data.
+
+## Applying a Response to Local State
+
+Before a request, Android snapshots the saved coordinates, request source, and
+durable request revision. The app may coalesce an in-flight manual and scheduled
+check for the same revision, but that process-scoped guard only reduces duplicate
+traffic. Before applying either a successful response or an error, one atomic
+DataStore update verifies that the captured revision is still current and, for
+automatic work, monitoring is still enabled. If location or monitoring/alert
+settings changed, discard the entire result without changing the current
+estimate, alert baseline, last-success time, or monitoring status. Location and
+setting changes increment the revision. Persisted revision checks remain the
+safety mechanism across worker/process restarts; on restart, work reads current
+state before making a new request. Within one current revision, only strictly
+newer model-valid timestamps can replace estimates, so out-of-order responses
+cannot regress the saved estimate.
 
 ## Use Conditions, Quotas, and Attribution
 

@@ -33,9 +33,10 @@ Expected results:
 
 - Debug APK assembles without provider secrets or an app server.
 - Unit tests cover AQI rounding/categories, time parsing/freshness, invalid
-  response rejection, silent baseline establishment/expiry, upward threshold
-  crossings, recovery/rearming, duplicate suppression, and permission-denied
-  suppression without catch-up.
+  response rejection, separate 12-hour alert eligibility and 18-hour display
+  freshness, silent baseline establishment/expiry, upward threshold crossings,
+  recovery/rearming, duplicate suppression, superseded-response rejection, and
+  permission-denied suppression without catch-up.
 
 For instrumentation checks with a connected device/emulator:
 
@@ -73,19 +74,56 @@ test double. Do not log full URLs, user coordinates, or raw location values.
 
 | Input | Expected behavior |
 |---|---|
-| Finite valid current AQI with fresh Unix timestamp | Save/display as US AQI, classify/alert after nearest-integer rounding, record retrieval separately |
-| Missing/null AQI or timestamp, negative/non-finite value, malformed JSON, HTTP error | Keep last valid estimate; mark check unavailable/invalid; no alert |
+| Finite valid current AQI and timestamp | Save/display as US AQI; record retrieval separately; evaluate alerts only if the model time is no more than 12 hours old and the newer value crosses a floor |
+| Missing/null AQI or timestamp, negative/non-finite value, malformed JSON, HTTP error | Keep estimate and last-success time; mark check unavailable/invalid; no alert |
 | Timestamp more than five minutes in future | Reject response; no estimate or alert update |
-| Model-valid age exactly 18 hours | Still within the defined freshness limit |
-| Model-valid age more than 18 hours | Mark stale; do not replace estimate or update alert state |
-| Last usable check more than two hours ago | Show monitoring delayed even if stored estimate remains fresh |
-| Duplicate or older model-valid timestamp in otherwise valid fresh response | Update successful-check status/time; do not replace accepted estimate, change alert baseline, or trigger an alert |
-| Newer valid estimate after a baseline gap over 24 hours | Establish a new silent baseline |
+| Model-valid age exactly 12 hours | Alert-eligible if timestamp is newer and it crosses a category floor |
+| Model-valid age more than 12 through exactly 18 hours | May replace the displayed estimate as display-only; do not change alert baseline or notify |
+| Model-valid age more than 18 hours in a well-formed response | Update check time; do not accept the response as current; retain the stored estimate and derive freshness from its timestamp; no alert-state change |
+| Last well-formed API response more than two hours ago | Show monitoring delayed regardless of stored estimate age |
+| Duplicate or older model-valid timestamp in an otherwise well-formed response | Update successful-check status/time; do not replace estimate, change alert baseline, or trigger an alert, even if AQI differs |
+| Newer alert-eligible estimate after alert baseline is over 12 hours old | Establish a new silent baseline |
 
 One controlled live request verifies provider connectivity and response shape;
 it does not prove broad geographic coverage, accuracy, model freshness, or
 service availability. Confirm the returned grid coordinate may differ from the
 selected coordinate and present the value as a regional model estimate.
+
+Keep the three user-facing times/cadences distinct in the UI and fixtures:
+last successful app/API check; the estimate's model-valid time; and the
+underlying CAMS Global model's approximately 12-hour update cadence. Use concise
+copy such as: “The model usually updates about every 12 hours. Hourly checks may
+show the same estimate.” Do not claim that hourly polling obtains hourly new
+model observations.
+
+## Deterministic Request-Race Checks
+
+Use a fake API client with held responses and a DataStore test instance. Assert
+that request results are committed only for the saved location and monitoring
+state version captured before the request:
+
+1. Start a request for location A and hold its success response. Change the
+   saved location to B, which increments the durable request revision and
+   clears A's estimate/baseline/status. Complete A's response; assert it cannot
+   alter B's estimate, baseline, last-success time, check status, or notifications.
+2. Hold an automatic response, then disable monitoring or change sensitivity /
+   the in-app notification setting. Complete the response; assert the stale
+   revision changes no stored values or notification output. A fresh manual
+   request made under the new revision remains usable if monitoring is paused.
+3. Request manual refresh and scheduled work under the same revision; assert
+   they join one in-flight GET. Also deliver two separate same-revision
+   responses in reverse order; after the newer model-valid timestamp commits,
+   the older one cannot overwrite estimate or alert baseline. A duplicate model
+   timestamp, even with a different AQI, can update only successful-check
+   time/status.
+4. Persist revision N, recreate the store/coordinator as after process restart,
+   and deliver a delayed result carrying N after saved location/settings advance
+   to N+1. Assert complete rejection. The restarted worker must read current
+   coordinates and revision before issuing its request.
+5. Serialize the brief state commit/notification section with location and
+   monitoring-setting changes; never hold that synchronization during network
+   I/O. If process death occurs after baseline commit but before notification
+   delivery, a missed notification is acceptable; no queued catch-up is allowed.
 
 ## US AQI Classification and Alert Checks
 
@@ -111,18 +149,21 @@ Verify alert transitions for every configured floor:
 | 201 | 201, 301 | At or below 200 for the 201 floor |
 | 301 | 301 | At or below 300 for the 301 floor |
 
-For each floor, confirm a below-to-at-or-above crossing can send one local
-notification; a jump across multiple eligible categories sends one notification
-for the highest newly crossed category; unchanged or worsening values above an
-already reached floor do not duplicate; falling below the floor rearms it; and
-a later upward recross may alert again. A first reading already above a floor
-and the first reading after baseline expiry are silent baselines. If Android
-notification delivery is disabled, accepted values still advance the baseline;
-restoring permission does not deliver a catch-up notification.
+For each floor, with a newer estimate no more than 12 hours old, confirm a
+below-to-at-or-above crossing can send one local notification; a jump across
+multiple eligible categories sends one notification for the highest newly
+crossed category; unchanged or worsening values above an already reached floor
+do not duplicate; falling below the floor rearms it; and a later upward recross
+may alert again. A first alert-eligible reading already above a floor and the
+first eligible reading after a baseline older than 12 hours are silent
+baselines. A 12-to-18-hour estimate remains displayable but cannot change the
+alert baseline, rearm a floor, or send a notification. If Android notification
+delivery is disabled, eligible values still advance the baseline; restoring
+permission does not deliver a catch-up notification.
 
-Changing sensitivity alone must not notify. If the currently accepted estimate
-is already above the newly selected floor, a notification requires a later
-recovery below and upward recrossing of that floor.
+Changing sensitivity alone must not notify. If the latest alert-eligible
+baseline is already above the newly selected floor, a notification requires a
+later eligible recovery below and upward recrossing of that floor.
 
 ## Background and Physical-Device Checks
 

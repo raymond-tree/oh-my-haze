@@ -118,13 +118,17 @@ for alert state.
   returned GMT, confirming why the app must request `timezone=auto`. The MVP
   requests `timeformat=unixtime` for absolute comparisons and uses the returned
   timezone name to display local time rather than the device's current timezone.
-- **Freshness decision**: Mark an estimate stale when the age of its
-  model-valid timestamp exceeds 18 hours. The 18-hour product cutoff gives a
-  six-hour buffer around the published 12-hour model update cadence. Also show
-  app retrieval age independently, and show monitoring as delayed after more
-  than two hours without a successful app check. Because the provider does not
-  expose a model-run time, the stale rule cannot prove that an upstream cycle
-  was refreshed on schedule; this limitation must remain visible in the plan.
+- **Freshness decision**: Keep three times distinct: the app's last successful
+  API check, the model-valid time represented by the displayed estimate, and
+  CAMS Global's approximately 12-hour model update cadence. Retain estimates for
+  display through 18 hours of model-valid age (a six-hour buffer); after that,
+  mark them stale. Permit alert evaluation only through 12 hours of model-valid
+  age. A 12-to-18-hour estimate remains visible but cannot change the alert
+  baseline or notify. This stricter alert window is a conservative one-cycle age
+  proxy, not proof that a new model run occurred: the standard response exposes
+  no model-run ID. Hourly polling can return the same estimate and does not
+  guarantee hourly new model data. Monitoring-delay status remains a separate
+  two-hour interval since the last successful app check.
 
 ## Access, Authentication, Terms, and Limits
 
@@ -215,9 +219,10 @@ Material risks and limits:
    returned grid center away from the saved coordinate. The app is informative,
    not a substitute for a nearby monitor or official local reading.
 2. **Model cadence and timestamp**: Published global data refresh every 12
-   hours; the normal API response lacks the source-run timestamp. An 18-hour
-   valid-time stale marker is a practical approximation, not proof of source
-   freshness. Hourly polling cannot make the underlying model refresh faster.
+   hours; the normal API response lacks the source-run timestamp. The 12-hour
+   alert-age limit is a conservative operational proxy, while the 18-hour
+   display limit allows six hours of delay. Neither proves source freshness, and
+   hourly polling cannot make the underlying model refresh faster.
 3. **Free service scale and reliability**: Limits apply to free usage and the
    service has no uptime guarantee. Exact distributed-fleet quota pooling is
    not stated publicly; broad release volume needs a fresh terms/capacity review.

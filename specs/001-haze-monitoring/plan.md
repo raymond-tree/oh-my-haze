@@ -31,11 +31,12 @@ preferences, latest valid estimate, check status, and alert baseline/state. No
 Room or remote database. Exclude the DataStore file containing coordinates from
 Android cloud backup and device-to-device transfer.
 
-**Testing**: Local unit tests for US AQI integer rounding/category boundaries, timestamp parsing
-and freshness, malformed-value rejection, baseline expiry, sensitivity floors,
-threshold rearming, and duplicate/catch-up suppression. Android tests for
-permission and UI states. Validate background scheduling on physical devices;
-emulators alone cannot represent OEM battery policies.
+**Testing**: Local unit tests for US AQI rounding/category boundaries, timestamp
+parsing and separate 12-hour alert eligibility/18-hour display freshness,
+malformed-value rejection, baseline expiry, sensitivity floors, threshold
+rearming, duplicate/catch-up suppression, and superseded-response rejection.
+Android tests for permission and UI states. Validate background scheduling on
+physical devices; emulators alone cannot represent OEM battery policies.
 
 **Target Platform**: Native Android, minSdk 24 (Android 7.0). Use the current
 target/compile SDK required at implementation and release. Request notification
@@ -108,40 +109,67 @@ limitations remain documented product risks, not a current feasibility blocker.
 3. **Current data and timestamps**: Treat `current.time` as a model-valid time,
    not an observation timestamp. Request Unix seconds for unambiguous age
    checks; use the response `timezone` identifier for local display and never
-   reinterpret the timestamp in the device timezone. Keep `retrievedAt` separate.
-   More than 18 hours model-valid age marks the estimate stale. More than two
-   hours since a successful check marks monitoring delayed. Clearly document
-   that the source model's run timestamp is not exposed, so the age check is only
-   an estimate.
+   reinterpret the timestamp in the device timezone. Keep last successful API
+   check, estimate model-valid time, and source update cadence distinct in state
+   and UI. Show an estimate through 18 hours of model-valid age; beyond that
+   mark it stale and retain it. Permit alert evaluation only through 12 hours of
+   model-valid age. Explain simply that CAMS Global usually updates about every
+   12 hours and hourly checks may return the same estimate. The response does
+   not expose a definitive model-run time, so the 12-hour alert limit is a
+   conservative age proxy, not proof of a new model cycle. More than two hours
+   since a successful API check marks monitoring delayed independently. A
+   well-formed response with an older-than-18-hour model time still advances the
+   last successful API check time; estimate freshness remains based on the
+   stored estimate's model-valid time, independently from check delay.
 4. **Location**: Request foreground approximate location only after the user
    chooses current location. Use a bounded fused `getCurrentLocation` request,
    save its coordinates and a simple label, then use no location API in the
    worker. Offer a small bundled locality list if the user denies or skips the
    permission. Do not add external geocoding or a map.
-5. **State**: Use Preferences DataStore for saved location, toggles, chosen
-   sensitivity floor, latest valid value/timestamps, worker status, and the
-   latest accepted AQI/model-time baseline used for threshold crossings.
-   Exclude this store from Android backup to avoid
-   transferring the saved coordinates. Changing the location resets the alert
-   baseline; it never compares two different locations.
-6. **Monitoring**: Enqueue one unique periodic network-constrained WorkManager
-   request with a 60-minute interval. Do not add charging, idle, or unmetered
-   constraints. Manual refresh uses one unique one-time request. A shared
-   process-scoped non-blocking request guard prevents a scheduled/manual overlap
-   from issuing a second GET. On failure, record status and wait for a later
-   hourly or user-initiated check; do not rapid-retry.
+5. **State**: Use Preferences DataStore for the saved location, monitoring and
+   notification preferences, sensitivity floor, latest display estimate and
+   timestamps, worker status, alert baseline, and a durable `requestRevision`.
+   Increment the revision when the saved location or a monitoring/alert setting
+   that affects a request changes. A location change also clears its estimate,
+   baseline, and check status. Exclude the store from Android backup to avoid
+   transferring saved coordinates.
+6. **Monitoring and response commit**: Enqueue one unique periodic
+   network-constrained WorkManager request with a 60-minute interval. Do not add
+   charging, idle, or unmetered constraints. Manual refresh uses one unique
+   one-time request. Each request snapshots current coordinates, location
+   label, request revision, and source (manual or automatic) before networking.
+   The network call runs outside state synchronization. A process-scoped
+   in-flight guard keyed by revision coalesces manual/scheduled work for the same
+   state and reduces duplicate calls; it is only an optimization. Before any
+   result updates the estimate, baseline, last-success time, or status, one
+   atomic DataStore `updateData` transaction verifies that the revision still
+   matches and, for automatic work, monitoring remains enabled. A mismatch
+   discards the whole result, including failure and status changes. Within a
+   matching revision, only a strictly newer model-valid timestamp may replace
+   the display estimate or be considered by alert logic, preventing out-of-order
+   responses from regressing state. Serialize the short commit-and-notify
+   section with location/monitoring-setting changes so a superseded location
+   cannot notify after a switch; never hold that synchronization during the
+   network call. On process restart, work reloads current state and snapshots a
+   new revision; the persisted revision rejects stale request contexts. On
+   failure, record status only if the revision still matches and wait for a later
+   scheduled or user-requested check; do not rapid-retry.
 7. **Alert behavior**: Round finite non-negative provider values to the nearest
    whole integer before categorization and threshold evaluation; display that
    rounded integer except preserve source values above 500 un-clamped. Use
    category floors 101, 151, 201, and 301. The default sensitivity floor is 101;
    higher choices remove lower floor events from eligibility. Compare each new
-   fresh accepted integer value to the preceding accepted value. For a
-   multi-category upward jump, emit at most one event for the highest newly
-   crossed eligible category. Updating the accepted value after every valid
-   check suppresses duplicates, rearms a threshold only after the value recovers
-   below it, and prevents catch-up after notification suppression. A first
-   estimate for a location is a silent baseline; a baseline older than 24 hours
-   expires and the next estimate is also a silent baseline.
+   alert-eligible integer value (model-valid age at most 12 hours) to the
+   preceding alert baseline. An estimate 12 to 18 hours old may update the
+   displayed reading but cannot change alert state or notify; an estimate older
+   than 18 hours is stale. For a multi-category upward jump, emit at most one
+   event for the highest newly crossed eligible category. Updating the alert
+   baseline after each eligible value suppresses duplicates, rearms a threshold
+   only after recovery below it, and prevents catch-up after notification
+   suppression. A first eligible estimate, or the first eligible estimate after
+   the baseline model time is over 12 hours old, silently establishes a baseline.
+   If notification restrictions block delivery, advance state without queuing
+   an event.
 8. **Attribution and product messaging**: Show **US AQI**, explain regional
    model-estimate limitations, and provide Open-Meteo, CAMS, and CC BY 4.0
    attribution on the reading detail/About surface. Disclose before the first
@@ -205,10 +233,18 @@ general API abstraction.
   response field, timezone metadata, selected grid coordinate, attribution, and
   privacy notice. Do not use personal location in logs or screenshots.
 - **Alert cases**: Test every boundary listed in the quickstart, fractional AQI
-  rounding, multi-category
-  jumps, stale/invalid/duplicate timestamps, 24-hour baseline expiry, recovery
-  rearming, disabled notifications, and absence of catch-up after restoring
-  Android permission.
+  rounding, multi-category jumps, duplicate timestamps, 12-hour alert
+  eligibility, 12-to-18-hour display-only estimates, >18-hour stale estimates,
+  expired alert baselines, recovery rearming, disabled notifications, and no
+  catch-up after restoring Android permission.
+- **Deterministic request-race cases**: Hold a manual or worker response while
+  changing location, disabling monitoring, or changing alert settings; prove
+  the old response cannot change estimate, baseline, last-success time, status,
+  or notification output. Complete two same-revision responses out of order and
+  prove an older model timestamp cannot overwrite a newer estimate. Exercise
+  manual/scheduled coalescing and replay a pre-restart revision against restored
+  DataStore state; it must be rejected. Keep tests at the existing client/state
+  boundary; do not add an architecture layer for them.
 
 ## Complexity Tracking
 

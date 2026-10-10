@@ -43,6 +43,11 @@ satisfied; it does not mean implementation work is complete.
   approved non-commercial MVP
 - [x] Fractional provider values have a defined whole-index rounding rule for US
   AQI category and alert thresholds
+- [x] Last successful API check, model-valid time, and source model update
+  cadence are distinguished in the specification and UI expectations
+- [x] Display freshness and alert eligibility have separate, explicit age rules
+- [x] Location/configuration changes and process restart have deterministic
+  stale-response acceptance criteria
 
 ## Notes
 
@@ -57,9 +62,10 @@ satisfied; it does not mean implementation work is complete.
   halves up) before category and alert-floor comparisons, consistent with the
   US AQI nearest-integer convention documented by EPA.
 - Default notification floor is US AQI 101; optional sensitivity choices are
-  101, 151, 201, or 301. The 18-hour estimate-stale cutoff allows a buffer for
-  the published 12-hour CAMS Global refresh and remains an approximation
-  because Open-Meteo does not expose a source-run timestamp.
+  101, 151, 201, or 301. Estimates may remain displayed through 18 hours, but
+  only model-valid times no more than 12 hours old can affect alert state. The
+  12-hour alert rule is a conservative proxy because Open-Meteo does not expose
+  the source model-run timestamp; checks do not guarantee new hourly model data.
 - Open-Meteo free-tier use is non-commercial only. The user confirmed the
   intended app is non-commercial; a future commercial or promotional purpose
   requires a new provider and architecture review.

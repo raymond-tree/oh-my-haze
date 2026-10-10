@@ -16,6 +16,19 @@ Sync Impact Report — 2026-10-10
   `specs/001-haze-monitoring/spec.md`.
 -->
 
+<!--
+Sync Impact Report — 2026-10-10
+- Version change: 2.0.0 → 2.1.0. Refined freshness policy: estimates can remain
+  displayable through 18 hours, while alert decisions require model-valid age
+  at most 12 hours and a newer upward category crossing.
+- Amended principles: III (alert eligibility and baseline age); IV (distinguish
+  last successful API check, model-valid time, and approximately 12-hour source
+  cadence).
+- Amended sections: None. MVP provider, platform, privacy, and scope unchanged.
+- Follow-up TODOs: None. Matching details are in
+  `specs/001-haze-monitoring/spec.md` and planning artifacts.
+-->
+
 # Oh My Haze Constitution
 
 ## Core Principles
@@ -42,25 +55,31 @@ monitoring location; ordinary and background checks MUST reuse those saved
 coordinates. Checks MUST minimize network requests and battery use.
 
 ### III. Meaningful Notifications
-The app MUST notify users only when a newer, valid, non-stale US AQI estimate
-crosses into an eligible worsening category for the saved location. The default
-minimum notification level MUST be 101 (Unhealthy for Sensitive Groups), with
-only the four documented category-floor choices if sensitivity is configurable.
-It MUST persist alert state locally to prevent duplicate alerts, rearm only
-after recovery below a reached category, and respect notification permission and
-user preferences. Invalid, missing, duplicate, old, or stale estimates MUST NOT
-trigger alerts. Removing Android notification restrictions MUST NOT send
-catch-up alerts.
+The app MUST notify users only when a newer, valid US AQI estimate with a
+model-valid age of no more than 12 hours crosses into an eligible worsening
+category for the saved location. Estimates more than 12 and no more than 18
+hours old may remain visible but MUST NOT change alert state or trigger a
+notification. The 12-hour alert window is a conservative proxy for the normal
+CAMS Global update cadence; the API does not expose a model-run timestamp. The
+default minimum notification level MUST be 101 (Unhealthy for Sensitive Groups),
+with only the four documented category-floor choices if sensitivity is
+configurable. It MUST persist alert state locally to prevent duplicate alerts,
+expire a baseline after more than 12 hours, rearm only after recovery below a
+reached category, and respect notification permission and user preferences.
+Invalid, missing, duplicate, old, or stale estimates MUST NOT trigger alerts.
+Removing Android notification restrictions MUST NOT send catch-up alerts.
 
 ### IV. Accurate and Transparent Data
 The app MUST use Open-Meteo's US AQI value and MUST label it **US AQI**. It MUST
 not present the value as Malaysian API/IPU or an official Malaysian measurement.
 The interface MUST display the estimate, classification, saved monitoring
-location, model-valid time, and last successful check as distinct information.
-Missing, outdated, or unavailable data MUST be clearly identified. The
-interface MUST explain that Open-Meteo provides a regional model-based estimate,
-not a measurement at the user's exact location, and MUST clearly attribute
-Open-Meteo and CAMS under the applicable data license.
+location, model-valid time, and last successful API check as distinct
+information. It MUST explain that the underlying model usually updates about
+every 12 hours and hourly checks may return the same estimate. Missing, outdated,
+or unavailable data MUST be clearly identified. The interface MUST explain that
+Open-Meteo provides a regional model-based estimate, not a measurement at the
+user's exact location, and MUST clearly attribute Open-Meteo and CAMS under the
+applicable data license.
 
 ### V. Simplicity and Privacy
 The app MUST use Kotlin, Jetpack Compose, WorkManager, and DataStore, and MUST
@@ -116,4 +135,4 @@ added principles or materially expanded requirements, and PATCH for
 clarifications and wording changes. Every specification, plan, task list, and
 implementation review MUST check compliance with these rules.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-09 | **Last Amended**: 2026-10-10
+**Version**: 2.1.0 | **Ratified**: 2026-10-09 | **Last Amended**: 2026-10-10

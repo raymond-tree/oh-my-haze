@@ -75,32 +75,43 @@ clear in each state.
 2. **Given** the estimate is displayed, **When** the user views its details,
    **Then** the app explains that Open-Meteo supplies model-based estimates from
    a regional grid, not a measurement taken at the user's exact location, and
-   clearly attributes Open-Meteo and CAMS.
-3. **Given** the model-valid time is more than 18 hours old, **When** the estimate
+   clearly attributes Open-Meteo and CAMS. It also says the underlying model
+   usually updates about every 12 hours, so hourly checks may show the same
+   estimate.
+3. **Given** the model-valid time is more than 12 but no more than 18 hours old,
+   **When** the estimate is displayed, **Then** it remains visible as an older
+   estimate with a clear notice that it cannot trigger alerts.
+4. **Given** the model-valid time is more than 18 hours old, **When** the estimate
    is displayed, **Then** it is marked stale and cannot trigger a worsening
-   notification. The 18-hour cutoff allows a buffer around the published
-   approximately 12-hour global model update schedule.
-4. **Given** an automatic check has not succeeded for more than two hours,
+   notification. The 18-hour cutoff allows a six-hour display buffer around the
+   approximately 12-hour model update cadence. A well-formed response still
+   updates the last successful API check time, distinct from the stale estimate
+   time.
+5. **Given** an automatic check has not succeeded for more than two hours,
    **When** the home screen opens, **Then** the monitoring check is separately
-   marked delayed even if the last stored estimate's model-valid time remains
-   within its freshness window.
-5. **Given** a newer retrieval fails or omits a usable current value or model
+   marked delayed regardless of whether the last stored estimate is fresh,
+   display-only, or stale.
+6. **Given** a newer retrieval fails or omits a usable current value or model
    time, **When** the failure is shown, **Then** the last valid estimate and its
    original timestamps remain visible with a clear stale or unavailable status.
-6. **Given** the provider returns a negative, non-finite, malformed, future-dated,
+7. **Given** the provider returns a negative, non-finite, malformed, future-dated,
    missing, or null AQI value or timestamp, **When** the response is processed,
    **Then** it is rejected, does not replace the last valid estimate, and cannot
    trigger an alert.
-7. **Given** category-boundary values are displayed, **When** the user views the
+8. **Given** category-boundary values are displayed, **When** the user views the
    reading, **Then** each value has the correct category name and a distinct,
    consistent colour, with severity never conveyed by colour alone.
-8. **Given** the provider returns an AQI above 500, **When** it is displayed,
+9. **Given** the provider returns an AQI above 500, **When** it is displayed,
    **Then** the original number is preserved and the category is Hazardous.
-9. **Given** the provider returns a finite fractional AQI, **When** it is
+10. **Given** the provider returns a finite fractional AQI, **When** it is
    displayed and evaluated for alerts, **Then** category and alert evaluation
    use the nearest whole-number US AQI, with nonnegative half values rounded up
    (for example, 100.5 classifies as 101 and Unhealthy for Sensitive Groups).
    Values above 500 remain visible as returned and classify as Hazardous.
+11. **Given** a well-formed response repeats or moves backward from the displayed
+    model-valid timestamp but its AQI value differs, **When** it is processed,
+    **Then** only the last successful API check time and check status may update;
+    the displayed estimate, alert baseline, and notification state do not change.
 
 ---
 
@@ -138,8 +149,8 @@ state persistence under supported Android conditions.
 
 ### User Story 4 - Receive Alerts When Conditions Worsen (Priority: P1)
 
-As a user, I want one local notification when a fresh estimate worsens into an
-alert-eligible US AQI category, without duplicate or catch-up alerts.
+As a user, I want one local notification when a newer alert-eligible estimate
+worsens into a US AQI category, without duplicate or catch-up alerts.
 
 **Why this priority**: Alerts let users learn about worsening conditions
 without repeatedly checking the app.
@@ -150,41 +161,45 @@ the baseline, sensitivity floor, notification sequence, and rearming behavior.
 
 **Acceptance Scenarios**:
 
-1. **Given** the first fresh, valid estimate for a saved location is already
-   Unhealthy for Sensitive Groups (US AQI 101 or higher), **When** it establishes
-   the baseline, **Then** the app shows an in-app warning and sends no worsening
-   notification for that initial baseline.
+1. **Given** the first alert-eligible valid estimate for a saved location is
+   already Unhealthy for Sensitive Groups (US AQI 101 or higher), **When** it
+   establishes the baseline, **Then** the app shows an in-app warning and sends
+   no worsening notification for that initial baseline.
 2. **Given** the default sensitivity floor is 101 and a baseline is below it,
-   **When** a newer fresh estimate first crosses 101, 151, 201, or 301, **Then**
-   exactly one local notification is sent for the highest newly reached
-   alert-eligible category, if notifications are enabled and permitted.
-3. **Given** one fresh estimate jumps across more than one alert-eligible
+   **When** a newer estimate no more than 12 hours old first crosses 101, 151,
+   201, or 301, **Then** exactly one local notification is sent for the highest
+   newly reached alert-eligible category, if notifications are enabled and
+   permitted.
+3. **Given** one alert-eligible estimate jumps across more than one eligible
    category, **When** it is processed, **Then** at most one notification is sent
    for the highest newly reached eligible category.
 4. **Given** the user selects a higher sensitivity floor, **When** a newer
-   estimate crosses a category below that floor, **Then** no notification is
+   alert-eligible estimate crosses a category below that floor, **Then** no notification is
    sent for that category, while crossings at or above the selected floor remain
    eligible.
-5. **Given** an eligible threshold has been reached, **When** later estimates
+5. **Given** an eligible threshold has been reached, **When** later alert-eligible estimates
    remain in that category or worsen without crossing another eligible category,
    **Then** no duplicate notification is sent for that threshold.
-6. **Given** a fresh estimate falls below a reached category and later crosses
+6. **Given** an alert-eligible estimate falls below a reached category and later crosses
    that category upward again, **When** the new crossing is processed, **Then**
    that category may alert again.
-7. **Given** a first valid estimate is already at or above the selected
+7. **Given** the first alert-eligible valid estimate is already at or above the selected
    sensitivity floor, **When** it establishes a baseline, **Then** the current
    severity is visible in the app and no catch-up notification is sent.
 8. **Given** notification permission or the app notification setting is denied,
    disabled, or restricted, **When** conditions worsen, **Then** the app updates
    its alert state without queuing a later notification; restoring permission
    does not send a catch-up notification.
-9. **Given** the previous accepted model-valid time for the saved location is
-   more than 24 hours old, **When** the next fresh estimate arrives, **Then** it
-   establishes a new baseline, displays its current severity, and sends no
-   worsening notification for that estimate.
+9. **Given** the previous alert baseline's model-valid time is more than 12 hours
+   old, **When** the next alert-eligible estimate arrives, **Then** it establishes
+   a new baseline, displays its current severity, and sends no worsening
+   notification for that estimate.
 10. **Given** a delivered notification is tapped, **When** Oh My Haze opens,
     **Then** the user reaches the current view for the location that generated
     the alert.
+11. **Given** a newer valid estimate is more than 12 but no more than 18 hours
+    old, **When** it is received, **Then** it may replace the displayed estimate
+    but does not change the alert baseline or send a notification.
 
 ---
 
@@ -206,7 +221,8 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
    or failure state.
 2. **Given** a check for that location is already in progress, **When** another
    manual or scheduled check is requested, **Then** the app reuses or joins the
-   in-progress request instead of issuing a duplicate.
+   in-progress request for the same saved-location and monitoring-state version
+   instead of issuing a duplicate.
 3. **Given** a manual check returns a newer valid estimate, **When** it is
    processed, **Then** it follows the same baseline, freshness, and notification
    rules as an automatic check.
@@ -219,6 +235,13 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
 6. **Given** a user navigates the home screen and settings with assistive
    technology, **When** they inspect severity, monitoring, and controls, **Then**
    each has a descriptive accessible label.
+7. **Given** a request is in progress, **When** the saved location or a setting
+   that affects monitoring or alerts changes, **Then** its eventual response is
+   discarded and cannot change the current estimate, alert baseline, last
+   successful check, monitoring status, or notifications.
+8. **Given** the process is interrupted after a request starts, **When** work
+   resumes, **Then** it reloads the current saved state and rejects any result
+   carrying a superseded state version.
 
 ### Edge Cases
 
@@ -232,13 +255,18 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
   negative number, an invalid timestamp, a timestamp too far in the future, or
   an HTTP/network error.
 - The model-valid time is duplicated, older than the last accepted time, or more
-  than 18 hours old even though the API request itself succeeded.
-- The app's last successful check is delayed while the model-valid time is still
-  within the estimate freshness window, or vice versa.
+  than 18 hours old even though the API request itself succeeded; a 12-to-18
+  hour estimate is display-only and cannot affect alerts.
+- The app's last successful check is delayed while the stored estimate remains
+  fresh, or a recently successful check returns a model estimate that is stale.
 - The global model is between its approximately 12-hour updates; hourly checks
-  may return estimates from the same model cycle.
+  may return the same estimate and do not prove that a new model run occurred.
 - The index lands on any category boundary or exceeds 500.
 - A new location is chosen while a check or an alert transition is in progress.
+- A request completes after the saved location or a monitoring/alert setting
+  changes; its superseded result must not update current state.
+- Manual and scheduled responses arrive out of order, or the process restarts
+  while a request is pending.
 - The user changes sensitivity while an alert category is already reached.
 - Android notification permission is denied, revoked, disabled in system
   settings, or restored after an alert was suppressed.
@@ -295,9 +323,17 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
   It MUST NOT describe the result as an official Malaysian API/IPU reading or as
   an exact local measurement.
 - **FR-012**: The app MUST mark an estimate stale when its model-valid time is
-  more than 18 hours old. It MUST separately mark monitoring delayed when no
-  check has succeeded for more than two hours. A retrieval time MUST NOT be
-  presented as the model-valid time.
+  more than 18 hours old and retain and clearly label the last estimate. An
+  estimate more than 12 but no more than 18 hours old MAY remain visible but
+  MUST be labelled too old to trigger alerts. The screen MUST distinguish the
+  last successful API check, estimate model-valid timestamp, and underlying
+  model's approximately 12-hour update cadence; hourly polling MUST NOT imply
+  hourly new model data. The app MUST separately mark monitoring delayed when
+  no well-formed API response with finite non-negative AQI and parseable
+  timestamp has arrived for more than two hours. Such a response updates the
+  last successful API check time even if its model-valid time is more than 18
+  hours old; check delay and estimate staleness MUST be shown separately. A
+  retrieval time MUST NOT be presented as the model-valid time.
 - **FR-013**: A usable estimate MUST include a numeric, finite, non-negative
   `current.us_aqi` and a parseable `current.time` that is not more than five
   minutes in the future. If the numeric value is fractional, the app MUST round
@@ -319,31 +355,34 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
   enabled, delayed, or unavailable and the time of the last successful check.
 - **FR-017**: The app MUST provide a manual refresh action, clear progress and
   failure states, preserve the last valid reading on failure, and avoid
-  concurrent duplicate requests for the saved location. Automatic failures
-  MUST NOT cause rapid retry loops.
+  concurrent duplicate requests for the same saved-location and monitoring-
+  state version. Automatic failures MUST NOT cause rapid retry loops.
 - **FR-018**: The default notification sensitivity floor MUST be US AQI 101
   (Unhealthy for Sensitive Groups). A simple four-choice setting MUST let users
   select floors of 101, 151, 201, or 301; crossings below the selected floor
   MUST not notify.
 - **FR-019**: For a saved location with an established baseline, only a newer,
-  valid estimate no more than 18 hours old may change alert state. A worsening
-  transition into a newly reached eligible category MUST send one local Android
-  notification when app and system notification settings permit. A single jump
-  across categories MUST send at most one notification for the highest newly
-  reached eligible category.
-- **FR-020**: The first fresh valid estimate for a location MUST establish its
+  valid estimate no more than 12 hours old and with a model-valid timestamp
+  newer than the latest displayed estimate and alert baseline may influence
+  alert state or send a notification. It MUST cross an alert floor upward from
+  the preceding eligible baseline; a successful API request or changed
+  retrieval time alone MUST NOT trigger an alert. A single jump across
+  categories MUST send at most one local Android notification for the highest
+  newly reached eligible category.
+- **FR-020**: The first alert-eligible valid estimate for a location MUST establish its
   baseline. If it is US AQI 101 or higher, the app MUST show the severity
   in-app without sending an initial worsening notification. Changing the saved
   location MUST establish a new baseline for that location.
 - **FR-021**: Each reached alert category MUST suppress duplicates and rearm
-  only after a newer fresh valid estimate returns below its floor (US AQI at or
-  below 100 for the 101 floor, 150 for 151, 200 for 201, and 300 for 301). A
-  category is crossed upward when the
-  previous accepted integer AQI was below its floor and the new accepted AQI
-  reaches or exceeds it. The first valid estimate, and the next fresh estimate
-  after a baseline's model-valid time is more than 24 hours old, MUST establish
-  a silent baseline without a worsening notification. A baseline older than
-  24 hours MUST expire.
+  only after a newer alert-eligible valid estimate returns below its floor (US
+  AQI at or below 100 for the 101 floor, 150 for 151, 200 for 201, and 300 for
+  301). A category is crossed upward when the previous alert-eligible integer
+  AQI was below its floor and the new eligible AQI reaches or exceeds it. The
+  first alert-eligible estimate, and the next alert-eligible estimate after a
+  baseline's model-valid time is more than 12 hours old, MUST establish a silent
+  baseline without a worsening notification. Estimates 12 to 18 hours old may
+  update the displayed estimate but MUST NOT change alert state. An alert
+  baseline older than 12 hours MUST expire.
 - **FR-022**: If notifications are disabled or unavailable, the app MUST update
   current severity and alert state without queuing a later system notification.
   Restoring permission or removing a system restriction MUST NOT produce a
@@ -363,6 +402,11 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
   conditions and request limits. It MUST include clear attribution to Open-Meteo
   and CAMS with the displayed estimate and identify any app-side AQI category
   labeling as a derived presentation.
+- **FR-027**: A response MUST be applied only if the saved location and
+  monitoring/alert configuration version for which it was requested are still
+  current. If either changed before completion, the response MUST be discarded
+  atomically and MUST NOT update the current estimate, alert baseline, last
+  successful check, monitoring status, or send a notification.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -374,10 +418,10 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
   time, last retrieval time, and freshness status.
 - **Monitoring preferences**: Monitoring enabled state, notification enabled
   state, chosen alert sensitivity floor, and saved monitoring location.
-- **Alert baseline and threshold state**: The latest accepted rounded US AQI
-  value and model-valid time for the saved location. New upward crossings are
-  derived by comparing that baseline with the next fresh accepted value; no
-  per-category notification history is required.
+- **Alert baseline and threshold state**: The latest alert-eligible rounded US
+  AQI value and model-valid time for the saved location. New upward crossings
+  are derived by comparing that baseline with the next newer alert-eligible
+  value; no per-category notification history is required.
 - **Monitoring status**: Whether background monitoring is enabled, the last
   successful check time, the last error or delayed/unavailable state, and
   notification availability.
@@ -394,9 +438,10 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
   200, 201, 300, 301, 500, and a value above 500) display the specified US AQI
   category and a visible text label. Fractional inputs round to the nearest
   whole number before the same boundary rules are applied.
-- **SC-003**: 100% of estimates with a model-valid time older than 18 hours are
-  marked stale, and no stale, missing, invalid, duplicate, or older estimate
-  triggers a worsening notification.
+- **SC-003**: 100% of estimates more than 18 hours old are marked stale;
+  estimates more than 12 and no more than 18 hours old remain labelled
+  display-only; and no estimate older than 12 hours triggers a worsening
+  notification.
 - **SC-004**: For every tested eligible worsening transition, exactly one local
   notification is sent for the highest newly reached eligible category before
   rearming; an initial already-unhealthy baseline and any transition suppressed
@@ -413,13 +458,19 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
 - **SC-008**: In a controlled connected test, at least 95% of manual refreshes
   show a success or understandable failure within 10 seconds; all failed
   refreshes preserve the last valid estimate and timestamps.
-- **SC-009**: 100% of overlapping manual and scheduled checks for the same
-  saved location result in no more than one active network request.
+- **SC-009**: 100% of manual and scheduled checks with the same saved-location
+  and monitoring-state version join or reuse one active request; independently
+  completed or out-of-order responses cannot regress the estimate or duplicate
+  an alert.
 - **SC-010**: At least 90% of usability-test participants understand that the
   displayed US AQI is a model-based regional estimate, not a measurement at
   their exact location or an official Malaysian API/IPU value.
 - **SC-011**: At least 90% of usability-test participants can distinguish the
   model-valid time from the app's last successful check time.
+- **SC-012**: Deterministic tests prove that responses from superseded location
+  or monitoring-state versions cannot change the current estimate, alert
+  baseline, successful-check time, monitoring status, or notification output,
+  including after a process restart.
 
 ## Assumptions
 
@@ -435,13 +486,16 @@ change each setting; and verify subsequent UI, requests, and alert behavior.
 - The app requests `current=us_aqi`, uses `domains=cams_global` for Malaysia,
   and asks Open-Meteo for a timezone resolved from the saved coordinates.
   It does not display hourly or multi-day forecast screens.
-- The 18-hour estimate-stale cutoff allows a buffer around the published
-  approximately 12-hour CAMS Global model refresh. The provider does not expose
-  a definitive model-run timestamp in the normal current response, so this
-  cutoff measures the age of the returned model-valid time and cannot detect
-  every delayed upstream model cycle.
-- A 24-hour gap expires the alert baseline. Changing locations creates a new
-  baseline rather than comparing values from different places.
+- Estimates remain useful to display for up to 18 hours, a six-hour buffer
+  around the approximately 12-hour CAMS Global update cadence. Only estimates
+  no more than 12 hours old may influence alerts; an older estimate may remain
+  visible but cannot alert. This is a conservative age proxy because the API
+  does not expose a definitive model-run timestamp. Hourly polling does not
+  guarantee hourly new model data.
+- An alert baseline expires after 12 hours without a newer alert-eligible
+  estimate; the next eligible estimate silently establishes a new baseline.
+  Changing locations creates a new baseline rather than comparing values from
+  different places.
 - A sensitivity floor of 101 is the default because it alerts as soon as the
   estimate reaches Unhealthy for Sensitive Groups; the four category-floor
   choices add a small, bounded setting without introducing a free-form slider.
