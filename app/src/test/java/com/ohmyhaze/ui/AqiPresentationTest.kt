@@ -27,12 +27,19 @@ class AqiPresentationTest {
     }
 
     @Test
-    fun everyCategoryHasTwoDistinctRecommendationStrings() {
+    fun everyCategoryHasCompletePosterCopy() {
         val recommendationPairs = UsAqiCategory.entries.map { category ->
-            val recommendations = AqiPresentation.forCategory(category).recommendationRes
-            assertEquals("$category should have two recommendations", 2, recommendations.size)
-            assertEquals("$category recommendations should be distinct", 2, recommendations.distinct().size)
-            recommendations
+            val presentation = AqiPresentation.forCategory(category)
+            assertNotEquals("$category needs a category label", 0, presentation.posterCategoryRes)
+            assertNotEquals("$category needs a range", 0, presentation.posterRangeRes)
+            assertNotEquals("$category needs a summary", 0, presentation.posterSummaryRes)
+            assertEquals("$category should have three recommendations", 3, presentation.recommendationRes.size)
+            assertEquals(
+                "$category recommendations should be distinct",
+                3,
+                presentation.recommendationRes.distinct().size,
+            )
+            presentation.recommendationRes
         }
 
         assertEquals(UsAqiCategory.entries.size, recommendationPairs.distinct().size)

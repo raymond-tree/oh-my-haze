@@ -1,18 +1,14 @@
 package com.ohmyhaze.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ohmyhaze.R
@@ -40,7 +35,6 @@ import com.ohmyhaze.data.CheckStatus
 import com.ohmyhaze.data.MonitoringState
 import com.ohmyhaze.monitoring.EstimateDisplayFreshness
 import com.ohmyhaze.monitoring.EstimateFreshness
-import com.ohmyhaze.monitoring.UsAqiCategory
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -73,8 +67,6 @@ fun HomeScreen(
     val displayFreshness = estimate?.let { EstimateFreshness.displayStatus(it.modelValidAt, now) }
     val delayed = state.lastSuccessfulCheckAt?.isBefore(now.minus(MONITORING_DELAY_LIMIT)) == true
     val timeZone = estimate?.providerTimezone?.toZoneIdOrUtc() ?: ZoneId.systemDefault()
-    val darkTheme = isSystemInDarkTheme()
-
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -125,22 +117,11 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("AQI", style = MaterialTheme.typography.labelLarge)
-                                Text(estimate.displayValue, style = MaterialTheme.typography.displayMedium)
-                                Text(
-                                    estimate.category.displayName,
-                                    color = AqiPresentation.severityColor(estimate.category, darkTheme),
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Image(
-                                painter = painterResource(presentation.illustrationRes),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(width = 132.dp, height = 82.dp)
-                                    .clip(RoundedCornerShape(18.dp)),
+                            Text("AQI", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                estimate.displayValue,
+                                modifier = Modifier.padding(start = 10.dp),
+                                style = MaterialTheme.typography.displayMedium,
                             )
                         }
                         Text(
@@ -150,7 +131,17 @@ fun HomeScreen(
                         )
                         AqiCategoryGauge(estimate.category, Modifier.padding(top = 1.dp))
                     }
-                    HealthRecommendations(estimate.category, presentation)
+                    FullAqiPoster(
+                        presentation,
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .align(Alignment.CenterHorizontally),
+                    )
+                    Text(
+                        stringResource(R.string.recommendation_general_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 Text(
@@ -185,43 +176,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun HealthRecommendations(category: UsAqiCategory, presentation: AqiCategoryPresentation) {
-    val severityColor = AqiPresentation.severityColor(
-        category = category,
-        darkTheme = isSystemInDarkTheme(),
-    )
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = severityColor.copy(alpha = 0.10f),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text("What you can do", style = MaterialTheme.typography.titleSmall)
-            presentation.recommendationRes.forEach { resourceId ->
-                Row(verticalAlignment = Alignment.Top) {
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 6.dp, end = 9.dp)
-                            .size(7.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(severityColor),
-                    )
-                    Text(stringResource(resourceId), style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            Text(
-                stringResource(R.string.recommendation_general_note),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

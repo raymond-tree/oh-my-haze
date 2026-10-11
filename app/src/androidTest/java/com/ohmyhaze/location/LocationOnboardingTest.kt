@@ -74,8 +74,6 @@ class LocationOnboardingTest {
         }
         onElement { textAsString() == "AQI" }
         onElement { textAsString() == "101" }
-        onElement { textAsString() == "Unhealthy for Sensitive Groups" }
-        onElement { textAsString() == "Sensitive groups: shorten outdoor activity and take more breaks." }
         assertFalse(onElementOrNull { textAsString() == "US AQI" } != null)
         assertFalse(onElementOrNull { textAsString()?.startsWith("Model-valid time:") == true } != null)
         assertFalse(onElementOrNull { textAsString()?.contains("Source: Open-Meteo") == true } != null)

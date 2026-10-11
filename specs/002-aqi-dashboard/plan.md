@@ -41,9 +41,11 @@ adaptive launcher icons on API 26+.
 **Performance Goals**: Keep the existing first-screen response and background
 work behavior. Package six optimized full-poster AQI illustrations; target a
 combined illustration payload below 1.5 MB while keeping embedded text legible
-at the rendered size. Fit the core dashboard at 360 × 800 dp and default font
-scale while allowing normal scrolling at larger font scales or smaller
-viewports.
+at the rendered size. At 360 × 800 dp and default font scale, keep the full
+poster, AQI/status/gauge, last-check time, and refresh action visible together.
+Render the poster at 90% of the available content width, preserving its full
+aspect ratio. Keep the page scrollable for narrow, landscape, and enlarged-font
+layouts.
 
 **Constraints**: Preserve the zero-backend, non-commercial Open-Meteo use;
 required CAMS/Open-Meteo attribution and CC BY 4.0 credit; coarse foreground
@@ -98,23 +100,24 @@ one-shot provider, and retain legally required data credit in Settings only.
 ## Follow-up Design Decision — 2026-10-11
 
 - Use each complete 1122 × 1402 supplied category poster as one dashboard
-  artwork card. At a 328 dp content width, the image is approximately 410 dp
-  tall and retains its complete category, AQI range, summary, cloud scene, and
-  three recommendations.
+  artwork card. At a 328 dp content width, render it at approximately 295 dp
+  wide and 369 dp tall; retain the complete category, AQI range, summary, cloud
+  scene, and three recommendations while keeping the default dashboard usable
+  at 360 × 800 dp.
 - Keep the live AQI number, compact six-part gauge, freshness, monitoring
   status, last-check time, refresh action, and general-guidance note as native
   interface content. Remove the duplicate visible category heading and
   separate recommendations panel.
-- Mirror the poster copy in app text or structured data for matching
-  accessibility semantics. Poster lettering remains fixed-size English text;
-  native interface text responds to font scaling, and scrolling remains
-  available on narrow, landscape, and enlarged-text layouts.
+- Mirror the poster copy in app resources for matching accessibility
+  semantics. Use image-relative Compose overlays to cover advice that needs
+  correction; keep their lettering aligned to the poster rather than Android's
+  font scale. Native interface text responds to font scaling, and scrolling
+  remains available on narrow, landscape, and enlarged-text layouts.
 - Keep the pale poster as a contained artwork card in dark appearance. Optimize
   full images under the existing 1.5 MB combined target only while their text
   stays legible.
-- Follow-up implementation work is tracked by T026–T030 in the task list. The
-  current implementation and historical validation record still refer to the
-  earlier crop-based version.
+- The full-poster implementation and its verification are recorded in
+  T026–T030 and the current validation record in [quickstart.md](quickstart.md).
 
 ## Project Structure
 

@@ -21,8 +21,9 @@ Derived from the existing saved state at render time:
 - `posterText`: matching app strings or structured presentation data for the
   visible category name, range, summary, and recommendations, used for
   accessibility semantics and consistency checks.
-- `recommendations`: the three messages embedded in the matching poster, kept
-  in sync with `posterText`.
+- `recommendations`: the three messages visible in the matching poster, kept
+  in sync with `posterText`. Compose covers selected original advice lines with
+  image-relative text overlays when the source wording needs correction.
 - `freshness`: `EstimateFreshness.displayStatus(modelValidAt, now)`; only its
   user-friendly status is rendered. The model timestamp remains internal.
 - `lastChecked`: `MonitoringState.lastSuccessfulCheckAt`, rendered as “Last
@@ -36,9 +37,10 @@ remain native interface content. The full poster is presented as one accessible
 group whose semantics expose the embedded category name, range, summary, and
 recommendations once; do not show or announce a duplicate category heading or
 recommendation panel. Keep the poster text mirrored in app resources or
-structured data. Its English typography is fixed in the image and does not
-respond to font scaling or localization; the native interface remains
-responsive and the poster remains reachable by scrolling. A custom gauge
+structured data. Its English typography is fixed relative to the image and
+does not respond to system font scaling or localization; corrected overlay text
+keeps that alignment. The native interface remains responsive and the poster
+remains reachable by scrolling. A custom gauge
 exposes one concise semantic category description instead of six individually
 focusable color-only segments. The general-guidance note remains native text.
 

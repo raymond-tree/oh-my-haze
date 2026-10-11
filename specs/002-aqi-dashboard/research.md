@@ -32,8 +32,9 @@
   accessible copy. The image semantics and matching text must expose each item
   once, without a duplicate visible heading or recommendation list.
 - Review the embedded advice against FR-009 before release. If a line needs
-  revision, revise the poster and its matching app text together; do not leave
-  different visible and accessible wording.
+  revision, cover the source line with an image-aligned Compose text overlay
+  and update its matching app resource together; do not leave different visible
+  and accessible wording. The source artwork stays unchanged in `assets/`.
 - Keep one compact native note below the artwork that identifies the advice as
   general and says local pollutant-specific guidance may differ.
 
@@ -49,11 +50,12 @@
   component semantics and adequate touch targets are preferred; any custom
   gauge exposes one concise category/value description instead of relying on
   color alone. Avoid announcing poster text twice.
-- Preserve the full portrait artwork at its aspect ratio. At 328 dp width it is
-  approximately 410 dp tall; use vertical scrolling on compact, landscape, and
-  enlarged-font layouts instead of cropping the artwork. Poster typography is
-  fixed-size English text and cannot scale or localize independently; native
-  interface text and controls continue to use scalable text.
+- Preserve the full portrait artwork at its aspect ratio. Render it at 90% of
+  the available content width: about 295 × 369 dp at 360 dp screen width, which
+  keeps the default AQI card and refresh control in the 360 × 800 dp layout.
+  Use vertical scrolling on 320 dp, landscape, and enlarged-font layouts instead
+  of cropping the artwork. Original and corrected poster text remain fixed
+  relative to the image; native interface text and controls use scalable text.
 - Add light and dark Material 3 color schemes based on the system appearance.
   The supplied artwork keeps its pale background as a contained card in dark
   appearance; other text, controls, and AQI severity colors must remain

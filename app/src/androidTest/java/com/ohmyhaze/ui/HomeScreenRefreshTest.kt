@@ -1,12 +1,18 @@
 package com.ohmyhaze.ui
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.platform.app.InstrumentationRegistry
 import com.ohmyhaze.data.AirQualityEstimate
 import com.ohmyhaze.data.CheckStatus
 import com.ohmyhaze.data.LocationSelectionSource
@@ -43,21 +49,56 @@ class HomeScreenRefreshTest {
 
         composeRule.setContent {
             OhMyHazeTheme {
-                HomeScreen(
-                    state = state,
-                    onChangeLocation = {},
-                    onRefresh = {},
-                    onOpenSettings = {},
-                    isRefreshing = false,
-                    notificationsAvailable = true,
-                )
+                Scaffold { contentPadding ->
+                    HomeScreen(
+                        state = state,
+                        modifier = Modifier.padding(contentPadding),
+                        onChangeLocation = {},
+                        onRefresh = {},
+                        onOpenSettings = {},
+                        isRefreshing = false,
+                        notificationsAvailable = true,
+                    )
+                }
             }
         }
 
         composeRule.onNodeWithText("AQI").assertIsDisplayed()
         composeRule.onNodeWithText("75").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("AQI category gauge: Moderate").assertIsDisplayed()
-        composeRule.onNodeWithText("Last checked", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Monitoring on").assertIsDisplayed()
+        val posterNode = composeRule.onNodeWithContentDescription(
+            "Moderate. AQI 51–100. Air quality is acceptable. Normal outdoor activities are fine.",
+            substring = true,
+        )
+        posterNode.fetchSemanticsNode()
+        val posterBounds = posterNode.fetchSemanticsNode().boundsInRoot
+        val viewportBounds = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val density = context.resources.displayMetrics.density
+        val viewportWidthDp = viewportBounds.width / density
+        val viewportHeightDp = viewportBounds.height / density
+        val defaultFontScale = context.resources.configuration.fontScale <= 1.01f
+        val standardCompactPortrait =
+            viewportWidthDp in 350f..370f && viewportHeightDp in 780f..810f && defaultFontScale
+        val refreshButton = composeRule.onNodeWithText("Refresh now")
+        val refreshBounds = refreshButton.fetchSemanticsNode().boundsInRoot
+        if (standardCompactPortrait) {
+            assertTrue(
+                "The complete poster should fit the standard portrait viewport",
+                posterBounds.top >= viewportBounds.top && posterBounds.bottom <= viewportBounds.bottom,
+            )
+            assertTrue(
+                "The refresh action should fit the standard 360 × 800 dp viewport with the full poster",
+                refreshBounds.bottom <= viewportBounds.bottom,
+            )
+        } else {
+            posterNode.performScrollTo().assertIsDisplayed()
+            refreshButton.performScrollTo().assertIsDisplayed()
+        }
+        composeRule.onNodeWithText("Last checked", substring = true).fetchSemanticsNode()
+        assertNoDashboardText("What you can do")
+        assertNoDashboardText("Moderate")
         assertNoDashboardText("US AQI")
         assertNoDashboardText("Model-valid time")
         assertNoDashboardText("Source: Open-Meteo")
@@ -99,7 +140,7 @@ class HomeScreenRefreshTest {
             }
         }
 
-        composeRule.onNodeWithText("Refresh now").performClick()
+        composeRule.onNodeWithText("Refresh now").performScrollTo().performClick()
         composeRule.onNodeWithText("Checking…").assertIsDisplayed()
         assertEquals(1, refreshRequests.get())
 
@@ -113,7 +154,7 @@ class HomeScreenRefreshTest {
             refreshing.value = false
         }
         composeRule.onNodeWithText("75").assertIsDisplayed()
-        composeRule.onNodeWithText("Refresh now").assertIsDisplayed()
+        composeRule.onNodeWithText("Refresh now").performScrollTo().assertIsDisplayed()
 
         composeRule.runOnIdle {
             state.value = state.value.copy(
@@ -121,9 +162,9 @@ class HomeScreenRefreshTest {
                 lastCheckError = "Could not reach Open-Meteo. Try again later.",
             )
         }
-        composeRule.onNodeWithText("75").assertIsDisplayed()
-        composeRule.onNodeWithText("Could not update AQI. Try again later.").assertIsDisplayed()
-        composeRule.onNodeWithText("Alerts unavailable").assertIsDisplayed()
+        composeRule.onNodeWithText("75").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Could not update AQI. Try again later.").fetchSemanticsNode()
+        composeRule.onNodeWithText("Alerts unavailable").fetchSemanticsNode()
     }
 
     @Test
@@ -151,14 +192,17 @@ class HomeScreenRefreshTest {
 
         composeRule.setContent {
             OhMyHazeTheme {
-                HomeScreen(
-                    state = state,
-                    onChangeLocation = {},
-                    onRefresh = {},
-                    onOpenSettings = {},
-                    isRefreshing = false,
-                    notificationsAvailable = true,
-                )
+                Scaffold { contentPadding ->
+                    HomeScreen(
+                        state = state,
+                        modifier = Modifier.padding(contentPadding),
+                        onChangeLocation = {},
+                        onRefresh = {},
+                        onOpenSettings = {},
+                        isRefreshing = false,
+                        notificationsAvailable = true,
+                    )
+                }
             }
         }
 
@@ -167,7 +211,7 @@ class HomeScreenRefreshTest {
     }
 
     @Test
-    fun recommendationsAreTextAndProportionateToDisplayedCategory() {
+    fun fullPosterCopyIsAccessibleWithoutDuplicateVisibleAdvice() {
         val now = Instant.ofEpochMilli(Instant.now().toEpochMilli())
         val location = SavedMonitoringLocation(
             label = "Kuala Lumpur",
@@ -178,30 +222,43 @@ class HomeScreenRefreshTest {
         )
         val state = MonitoringState(
             selectedLocation = location,
-            estimate = AirQualityEstimate(175.0, now.minusSeconds(600), now, "Asia/Kuala_Lumpur"),
+            estimate = AirQualityEstimate(125.0, now.minusSeconds(600), now, "Asia/Kuala_Lumpur"),
             lastSuccessfulCheckAt = now,
             checkStatus = CheckStatus.AVAILABLE,
         )
 
         composeRule.setContent {
             OhMyHazeTheme {
-                HomeScreen(
-                    state = state,
-                    onChangeLocation = {},
-                    onRefresh = {},
-                    onOpenSettings = {},
-                    isRefreshing = false,
-                    notificationsAvailable = true,
-                )
+                Scaffold { contentPadding ->
+                    HomeScreen(
+                        state = state,
+                        modifier = Modifier.padding(contentPadding),
+                        onChangeLocation = {},
+                        onRefresh = {},
+                        onOpenSettings = {},
+                        isRefreshing = false,
+                        notificationsAvailable = true,
+                    )
+                }
             }
         }
 
-        composeRule.onNodeWithText("Sensitive groups: avoid long or intense outdoor activity.")
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("Everyone else: reduce prolonged or heavy exertion.")
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("General guidance only; local health advice may differ.")
-            .assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Unhealthy for Sensitive Groups. AQI 101–150. Sensitive groups may experience health effects.",
+            substring = true,
+        ).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "Sensitive groups: reduce long or strenuous outdoor activity.",
+            substring = true,
+        ).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(
+            "For smoke or particle pollution, use a well-fitting N95 respirator.",
+            substring = true,
+        ).assertIsDisplayed()
+        assertNoDashboardText("What you can do")
+        assertNoDashboardText("Everyone else: reduce prolonged")
+        composeRule.onNodeWithText("General guidance only; local pollutant-specific advice may differ.")
+            .fetchSemanticsNode()
     }
 
     @Test
@@ -216,28 +273,32 @@ class HomeScreenRefreshTest {
         )
         val samples = listOf(
             25.0 to listOf(
-                "Enjoy outdoor activities as usual.",
-                "Air quality poses little to no risk for most people.",
+                "Good. AQI 0–50.",
+                "Open windows for fresh air.",
             ),
             75.0 to listOf(
-                "Most people can continue outdoor activities.",
-                "If you are unusually sensitive, choose shorter or lighter activity.",
+                "Moderate. AQI 51–100.",
+                "In smoke, sensitive people may use a well-fitting N95 respirator.",
             ),
             125.0 to listOf(
-                "Sensitive groups: shorten outdoor activity and take more breaks.",
-                "Everyone else can continue as usual and watch for symptoms.",
+                "Unhealthy for Sensitive Groups. AQI 101–150.",
+                "Sensitive groups: reduce long or strenuous outdoor activity.",
+                "For smoke or particle pollution, use a well-fitting N95 respirator.",
             ),
             175.0 to listOf(
-                "Sensitive groups: avoid long or intense outdoor activity.",
-                "Everyone else: reduce prolonged or heavy exertion.",
+                "Unhealthy. AQI 151–200.",
+                "Reduce long or strenuous outdoor activity.",
+                "For smoke, use an air cleaner to reduce indoor particles.",
             ),
             250.0 to listOf(
-                "Sensitive groups: avoid outdoor physical activity.",
-                "Others: move long or strenuous activity indoors or reschedule.",
+                "Very Unhealthy. AQI 201–300.",
+                "Sensitive groups stay indoors.\nOthers limit outdoor activity.",
+                "For smoke, use an air cleaner to reduce indoor particles.",
             ),
             350.0 to listOf(
+                "Hazardous. AQI 301+.",
                 "Everyone: avoid outdoor physical activity.",
-                "If smoke or particles are present, choose a cleaner indoor space.",
+                "If outdoors in smoke, wear a well-fitting N95 respirator.",
             ),
         )
         val state = mutableStateOf(
@@ -269,14 +330,16 @@ class HomeScreenRefreshTest {
                 )
             }
             recommendations.forEach { recommendation ->
-                composeRule.onNodeWithText(recommendation).assertIsDisplayed()
+                composeRule.onNodeWithContentDescription(recommendation, substring = true)
+                    .performScrollTo()
+                    .assertIsDisplayed()
             }
             if (index < samples.lastIndex) {
-                assertNoDashboardText("If smoke or particles are present")
+                assertNoDashboardText("What you can do")
             }
         }
-        composeRule.onNodeWithText("General guidance only; local health advice may differ.")
-            .assertIsDisplayed()
+        composeRule.onNodeWithText("General guidance only; local pollutant-specific advice may differ.")
+            .fetchSemanticsNode()
     }
 
     @Test

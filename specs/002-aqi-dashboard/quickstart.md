@@ -26,8 +26,10 @@ pending rather than implying it passed.
 
 1. Launch a saved-location build at 360 × 800 dp with default font size.
 2. Confirm the initial screen shows location, monitoring status, AQI value and
-   freshness, category gauge, full matching artwork, last-check state, and
-   refresh action. Confirm the AQI number remains live text outside the image.
+   freshness, category gauge, full matching artwork, last-check state, and the
+   complete refresh action. At this viewport the full card and refresh action
+   fit without scrolling. Confirm the AQI number remains live text outside the
+   image.
 3. Exercise values around all six category boundaries: 0/50, 51/100, 101/150,
    151/200, 201/300, and 301+. Confirm the full artwork's category and range
    agree with the current number and that the matching recommendations change.
@@ -37,11 +39,11 @@ pending rather than implying it passed.
    qualifier, source name/link, model-valid timestamp, or model update cadence.
 6. Verify no-estimate, older/stale estimate, delayed monitoring, and failed
    refresh states; freshness and monitoring delay remain separate.
-7. Inspect light/dark appearance, landscape, narrow width, and largest available
-   system font size. The complete artwork must remain uncropped and reachable
-   by scrolling; native text and controls must respond to font scaling. Confirm
-   the image semantics expose its category, range, summary, and recommendations
-   once and match the app text resources.
+7. Inspect dark appearance, 320 dp width, landscape, and 1.5× system font size.
+   The complete artwork must remain uncropped and reachable by scrolling; native
+   text and controls must respond to font scaling. Confirm the image semantics
+   expose its category, range, summary, and recommendations once and match the
+   app text resources.
 8. Check that the poster's embedded English text remains legible at the default
    rendered size and does not duplicate the accessible announcement. In dark
    mode, inspect the pale poster as an intentional contained card.
@@ -76,11 +78,10 @@ pending rather than implying it passed.
   only if the smallest embedded text remains legible at its rendered size. If
   that conflicts, revise the size target instead of degrading the text.
 
-## Historical validation record — 2026-10-11
+## Validation record — original crop-based iteration — 2026-10-11
 
-This evidence is for the original crop-based implementation. The complete
-poster-card design above is a follow-up and has not yet been implemented or
-validated.
+This record preserves evidence from the first dashboard iteration. The current
+full-poster implementation is verified separately below.
 
 - `./gradlew testDebugUnitTest connectedDebugAndroidTest assembleDebug` passed.
   The emulator suite ran 19 instrumentation tests on the Pixel_10a API 37 AVD.
@@ -94,3 +95,24 @@ validated.
   checked because the available AVD runs API 37.
 - Screenshot from the 360 × 800 dp light-mode check:
   `/Users/raincloudmarketing/.codex/visualizations/2026/10/11/01a12a7c-a0eb-70e2-9d0d-8b4fe76b9857/aqi-dashboard-360x800.png`
+
+## Validation record — full-poster follow-up — 2026-10-11
+
+- `./gradlew testDebugUnitTest connectedDebugAndroidTest assembleDebug` passes:
+  28 unit tests and 19 instrumentation tests on the Pixel_10a API 37 AVD.
+  Focused dashboard checks also pass in landscape and at 1.5× font scale.
+- At 360 × 800 dp with default text in light mode, the full 1122 × 1402 poster
+  renders at 90% of content width and fits with the AQI, freshness, gauge,
+  general-guidance note, last-check time, and full refresh action.
+- Dark-mode inspection confirms the pale poster remains distinct as a card on
+  the dark surface. At 320 × 800 dp, the uncropped poster and responsive
+  corrected copy stay legible. Landscape content and enlarged native text use
+  vertical scrolling; the full poster and controls remain reachable.
+- Poster copy replacements scale with the poster, not the system font setting.
+  Native interface text continues to scale. Accessibility tests cover the
+  category, range, summary, three recommendations, and category changes without
+  a duplicate visible recommendation panel.
+- All six packaged WebP posters are 1122 × 1402 and total 1,284,110 bytes; the
+  original files in `assets/` remain unchanged.
+- Screenshot from the standard 360 × 800 dp light-mode check:
+  `/Users/raincloudmarketing/.codex/visualizations/2026/10/11/01a12a7c-a0eb-70e2-9d0d-8b4fe76b9857/aqi-dashboard-full-poster-360x800.png`
