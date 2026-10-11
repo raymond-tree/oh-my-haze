@@ -5,6 +5,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import com.ohmyhaze.data.LocationSelectionSource
 import com.ohmyhaze.data.MonitoringState
 import com.ohmyhaze.data.MonitoringStateStore
 import com.ohmyhaze.data.SavedMonitoringLocation
+import com.ohmyhaze.debug.postDebugTestNotification
 import com.ohmyhaze.location.CurrentLocationProvider
 import com.ohmyhaze.ui.HomeScreen
 import com.ohmyhaze.ui.LocationPicker
@@ -65,6 +67,7 @@ private fun OhMyHazeApp(
     val scope = rememberCoroutineScope()
     var showLocationPicker by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var locationPickerReturnToSettings by remember { mutableStateOf(false) }
     var isRequestingLocation by remember { mutableStateOf(false) }
     var locationError by remember { mutableStateOf<String?>(null) }
     var manualRefreshInProgress by remember { mutableStateOf(false) }
@@ -102,6 +105,8 @@ private fun OhMyHazeApp(
         )
         onLocationSaved()
         showLocationPicker = false
+        showSettings = false
+        locationPickerReturnToSettings = false
         isRequestingLocation = false
         locationError = null
     }
@@ -128,12 +133,25 @@ private fun OhMyHazeApp(
         }
     }
 
+    val requestCurrentLocation: () -> Unit = {
+        if (context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            fetchCurrentLocation()
+        } else {
+            isRequestingLocation = true
+            locationError = null
+            permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+    }
+
     val saveSelectedLocation: (SavedMonitoringLocation) -> Unit = { location ->
         scope.launch {
             stateStore.saveLocation(location)
             onLocationSaved()
             showLocationPicker = false
             locationError = null
+            locationPickerReturnToSettings = false
         }
     }
 
@@ -144,8 +162,13 @@ private fun OhMyHazeApp(
                     modifier = Modifier.padding(padding),
                     onCancel = {
                         showLocationPicker = false
-                        showSettings = false
+                        showSettings = locationPickerReturnToSettings
+                        locationPickerReturnToSettings = false
+                        locationError = null
                     },
+                    onUseCurrentLocation = requestCurrentLocation,
+                    isRequestingCurrentLocation = isRequestingLocation,
+                    locationError = locationError,
                     onLocationSelected = saveSelectedLocation,
                 )
             }
@@ -153,16 +176,7 @@ private fun OhMyHazeApp(
             savedLocation == null -> {
                 OnboardingScreen(
                     modifier = Modifier.padding(padding),
-                    onRequestCurrentLocation = {
-                        if (context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                            PackageManager.PERMISSION_GRANTED
-                        ) {
-                            fetchCurrentLocation()
-                        } else {
-                            isRequestingLocation = true
-                            permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                        }
-                    },
+                    onRequestCurrentLocation = requestCurrentLocation,
                     onChooseManual = { showLocationPicker = true },
                     isRequestingLocation = isRequestingLocation,
                     locationError = locationError,
@@ -189,6 +203,7 @@ private fun OhMyHazeApp(
                         scope.launch { stateStore.setSensitivityFloor(floor) }
                     },
                     onChangeLocation = {
+                        locationPickerReturnToSettings = true
                         showSettings = false
                         showLocationPicker = true
                     },
@@ -204,6 +219,7 @@ private fun OhMyHazeApp(
                     state = state,
                     modifier = Modifier.padding(padding),
                     onChangeLocation = {
+                        locationPickerReturnToSettings = false
                         showSettings = false
                         showLocationPicker = true
                     },
@@ -212,6 +228,16 @@ private fun OhMyHazeApp(
                         app.monitoringScheduler.enqueueManualCheck()
                     },
                     onOpenSettings = { showSettings = true },
+                    onTestAlert = {
+                        val posted = state.notificationsEnabled &&
+                            postDebugTestNotification(context, savedLocation.label)
+                        val message = when {
+                            !state.notificationsEnabled -> "Turn on App alerts in Oh My Haze settings first."
+                            posted -> "Test alert sent"
+                            else -> "Notifications are blocked. Check Oh My Haze in Android settings."
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    },
                     isRefreshing = manualRefreshInProgress,
                     notificationsAvailable = notificationAvailable,
                 )

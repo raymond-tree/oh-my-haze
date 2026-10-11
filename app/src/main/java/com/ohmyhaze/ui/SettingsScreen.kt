@@ -18,6 +18,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -44,6 +48,7 @@ fun SettingsScreen(
     onRequestNotificationPermission: () -> Unit,
     onBack: () -> Unit,
 ) {
+    var showDataAttribution by remember { mutableStateOf(false) }
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier
@@ -58,27 +63,27 @@ fun SettingsScreen(
             PreferenceSwitch("App alerts", state.notificationsEnabled, onAppAlertsChanged)
 
             Text("Alert sensitivity", style = MaterialTheme.typography.titleMedium)
-            Text("Notify when a newer US AQI estimate first reaches this level.")
+            Text("Notify when a newer AQI estimate first reaches this level.")
             SensitivityChoice(
-                label = "US AQI 101 — Unhealthy for Sensitive Groups",
+                label = "AQI 101 — Unhealthy for Sensitive Groups",
                 floor = 101,
                 selected = state.sensitivityFloor == 101,
                 onSelect = onSensitivityChanged,
             )
             SensitivityChoice(
-                label = "US AQI 151 — Unhealthy",
+                label = "AQI 151 — Unhealthy",
                 floor = 151,
                 selected = state.sensitivityFloor == 151,
                 onSelect = onSensitivityChanged,
             )
             SensitivityChoice(
-                label = "US AQI 201 — Very Unhealthy",
+                label = "AQI 201 — Very Unhealthy",
                 floor = 201,
                 selected = state.sensitivityFloor == 201,
                 onSelect = onSensitivityChanged,
             )
             SensitivityChoice(
-                label = "US AQI 301 — Hazardous",
+                label = "AQI 301 — Hazardous",
                 floor = 301,
                 selected = state.sensitivityFloor == 301,
                 onSelect = onSensitivityChanged,
@@ -104,10 +109,16 @@ fun SettingsScreen(
             Button(onClick = onChangeLocation, modifier = Modifier.fillMaxWidth()) {
                 Text("Change monitoring location")
             }
+            TextButton(onClick = { showDataAttribution = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Data attribution")
+            }
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                 Text("Back to air quality")
             }
         }
+    }
+    if (showDataAttribution) {
+        DataAttributionDialog(onDismiss = { showDataAttribution = false })
     }
 }
 

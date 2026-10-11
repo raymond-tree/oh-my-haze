@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +36,9 @@ fun LocationPicker(
     modifier: Modifier = Modifier,
     locations: List<BundledLocality> = BundledLocations.all,
     onCancel: (() -> Unit)? = null,
+    onUseCurrentLocation: (() -> Unit)? = null,
+    isRequestingCurrentLocation: Boolean = false,
+    locationError: String? = null,
     onLocationSelected: (SavedMonitoringLocation) -> Unit,
 ) {
     var selected by remember(locations) { mutableStateOf<BundledLocality?>(null) }
@@ -44,6 +49,25 @@ fun LocationPicker(
             Spacer(Modifier.height(8.dp))
             Text("Select a saved monitoring location. The app will not follow your movements.")
             Spacer(Modifier.height(12.dp))
+            if (onUseCurrentLocation != null) {
+                OutlinedButton(
+                    onClick = onUseCurrentLocation,
+                    enabled = !isRequestingCurrentLocation,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (isRequestingCurrentLocation) {
+                        CircularProgressIndicator(modifier = Modifier.height(18.dp), strokeWidth = 2.dp)
+                        Text("Getting location…", modifier = Modifier.padding(start = 8.dp))
+                    } else {
+                        Text("Use my current location")
+                    }
+                }
+                if (locationError != null) {
+                    Text(locationError, color = MaterialTheme.colorScheme.error)
+                }
+                Text("Or choose a place", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(4.dp))
+            }
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(locations, key = BundledLocality::label) { locality ->
                     Row(
@@ -63,13 +87,17 @@ fun LocationPicker(
             }
             Button(
                 onClick = { selected?.let { onLocationSelected(it.toSavedLocation()) } },
-                enabled = selected != null,
+                enabled = selected != null && !isRequestingCurrentLocation,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Save this location")
             }
             if (onCancel != null) {
-                TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                TextButton(
+                    onClick = onCancel,
+                    enabled = !isRequestingCurrentLocation,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Text("Back")
                 }
             }

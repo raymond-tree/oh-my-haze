@@ -1,4 +1,17 @@
 <!--
+Sync Impact Report — 2026-10-11
+- Version change: 2.1.0 → 3.0.0. Updated the user-facing AQI presentation per
+  explicit product direction: use “AQI” without the “US” qualifier and remove
+  model/source detail from the dashboard.
+- Amended principles: IV (dashboard freshness and attribution placement).
+- Amended sections: MVP Scope (minimal dashboard copy and attribution in
+  Settings > Data attribution).
+- Attribution remains required: current Open-Meteo Air Quality API terms and
+  CC BY 4.0 require clear credit to Open-Meteo and the CAMS data provider.
+- Follow-up TODOs: None.
+-->
+
+<!--
 Sync Impact Report — 2026-10-10
 - Version change: 1.0.0 → 2.0.0. The approved source and index changed from
   Malaysian API/IPU station readings to Open-Meteo model-based US AQI estimates
@@ -70,16 +83,14 @@ Invalid, missing, duplicate, old, or stale estimates MUST NOT trigger alerts.
 Removing Android notification restrictions MUST NOT send catch-up alerts.
 
 ### IV. Accurate and Transparent Data
-The app MUST use Open-Meteo's US AQI value and MUST label it **US AQI**. It MUST
-not present the value as Malaysian API/IPU or an official Malaysian measurement.
-The interface MUST display the estimate, classification, saved monitoring
-location, model-valid time, and last successful API check as distinct
-information. It MUST explain that the underlying model usually updates about
-every 12 hours and hourly checks may return the same estimate. Missing, outdated,
-or unavailable data MUST be clearly identified. The interface MUST explain that
-Open-Meteo provides a regional model-based estimate, not a measurement at the
-user's exact location, and MUST clearly attribute Open-Meteo and CAMS under the
-applicable data license.
+The app MUST use Open-Meteo's US AQI value, while the user-facing interface may
+label it simply **AQI**. It MUST not present the value as Malaysian API/IPU or an
+official Malaysian measurement. The dashboard MUST show the saved monitoring
+location, a clear reading freshness state, and the last successful check.
+Missing, outdated, or unavailable data MUST be clearly identified. The dashboard
+MUST omit model-valid timestamps, model update cadence, and provider/source
+details. Settings MUST provide a “Data attribution” entry with clear credit to
+Open-Meteo and CAMS and a link to the applicable data license.
 
 ### V. Simplicity and Privacy
 The app MUST use Kotlin, Jetpack Compose, WorkManager, and DataStore, and MUST
@@ -105,12 +116,13 @@ Spec Kit.
 
 ## MVP Scope
 
-The MVP MUST provide saved-location selection; a current Open-Meteo US AQI
+The MVP MUST provide saved-location selection; a current Open-Meteo AQI
 estimate; background monitoring on a best-effort approximately 60-minute
 cadence; local notifications when conditions worsen; and visible estimate
 freshness, monitoring status, notification availability, and last successful
-check. The app MUST credit Open-Meteo and CAMS, and explain that the value is a
-model-based estimate. Historical trends, forecast screens, maps, charts,
+check. The dashboard MUST keep source and model details out of the primary view;
+Settings MUST credit Open-Meteo and CAMS and link the applicable data license.
+Historical trends, forecast screens, maps, charts,
 accounts, advanced notification rules, backend services, and iOS support are
 outside the MVP and require a separately approved specification before
 implementation.
@@ -135,4 +147,4 @@ added principles or materially expanded requirements, and PATCH for
 clarifications and wording changes. Every specification, plan, task list, and
 implementation review MUST check compliance with these rules.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-09 | **Last Amended**: 2026-10-10
+**Version**: 3.0.0 | **Ratified**: 2026-10-09 | **Last Amended**: 2026-10-11

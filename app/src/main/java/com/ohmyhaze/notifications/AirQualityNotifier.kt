@@ -26,7 +26,7 @@ class AirQualityNotifier(context: Context) {
                     "Air quality alerts",
                     NotificationManager.IMPORTANCE_DEFAULT,
                 ).apply {
-                    description = "Alerts when the saved location's US AQI worsens."
+                    description = "Alerts when the saved location's AQI worsens."
                 },
             )
         }
@@ -63,7 +63,7 @@ class AirQualityNotifier(context: Context) {
         val notification = builder
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("${alert.category.displayName} air quality")
-            .setContentText("US AQI ${alert.aqi} at $locationLabel")
+            .setContentText("AQI ${alert.aqi} at $locationLabel")
             .setContentIntent(tapIntent)
             .setAutoCancel(true)
             .build()
