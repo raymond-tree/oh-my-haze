@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -17,6 +18,7 @@ import com.ohmyhaze.data.SavedMonitoringLocation
 import com.ohmyhaze.ui.theme.OhMyHazeTheme
 import java.time.Instant
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -60,6 +62,7 @@ class MonitoringSettingsTest {
         }
 
         composeRule.onNodeWithText("Saved location: Kuala Lumpur").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText("US AQI", substring = true).fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithContentDescription("Automatic monitoring").assertIsOn()
         composeRule.onNodeWithContentDescription("Automatic monitoring").performClick()
         composeRule.onNodeWithContentDescription("Automatic monitoring").assertIsOff()
@@ -74,10 +77,10 @@ class MonitoringSettingsTest {
         composeRule.onNodeWithContentDescription("App alerts").assertIsOn()
 
         val choices = listOf(
-            101 to "US AQI 101 — Unhealthy for Sensitive Groups",
-            151 to "US AQI 151 — Unhealthy",
-            201 to "US AQI 201 — Very Unhealthy",
-            301 to "US AQI 301 — Hazardous",
+            101 to "AQI 101 — Unhealthy for Sensitive Groups",
+            151 to "AQI 151 — Unhealthy",
+            201 to "AQI 201 — Very Unhealthy",
+            301 to "AQI 301 — Hazardous",
         )
         composeRule.onNodeWithContentDescription(choices.first().second).assertIsSelected()
         for ((floor, label) in choices.drop(1)) {
@@ -86,6 +89,13 @@ class MonitoringSettingsTest {
             assertEquals(floor, state.value.sensitivityFloor)
         }
         composeRule.onNodeWithContentDescription(choices.first().second).assertIsNotSelected()
+
+        composeRule.onNodeWithText("Data attribution").performScrollTo().performClick()
+        composeRule.onNodeWithText(
+            "Air-quality data: Copernicus Atmosphere Monitoring Service (CAMS), delivered by Open-Meteo.",
+        ).assertIsDisplayed()
+        composeRule.onNodeWithText("CC BY 4.0 license").assertIsDisplayed()
+        composeRule.onNodeWithText("Close").performClick()
 
         composeRule.onNodeWithText("Change monitoring location").performScrollTo().performClick()
         assertEquals(1, locationChanges)
