@@ -6,14 +6,17 @@
 
 ## Summary
 
-Refresh the existing single-module Android app with a compact, accessible AQI
-dashboard, category-matched crops of the supplied illustrations, short
-category-specific activity guidance, adaptive launcher resources, light and
-dark themes, and a one-time current-location action in the existing location
-picker. Keep provider requests, the stored AQI estimate, WorkManager scheduling,
-notification policy, and request-revision safety unchanged. Use “AQI” in app
-copy, hide model timestamps and provider details from the dashboard, and place
-the required CAMS/Open-Meteo credit and CC BY 4.0 link in Settings.
+Refresh the existing single-module Android app with a compact AQI dashboard
+that uses each complete supplied category infographic as one artwork card,
+adaptive launcher resources, light and dark themes, and a one-time
+current-location action in the existing location picker. Keep the live AQI
+number, category gauge, freshness, monitoring state, last-check time, and
+refresh action in the interface without duplicating visible category or
+recommendation copy outside the artwork. Keep provider requests, the stored AQI
+estimate, WorkManager scheduling, notification policy, and request-revision
+safety unchanged. Use “AQI” in app copy, hide model timestamps and provider
+details from the dashboard, and place the required CAMS/Open-Meteo credit and
+CC BY 4.0 link in Settings.
 
 ## Technical Context
 
@@ -36,10 +39,11 @@ adaptive launcher icons on API 26+.
 **Project Type**: Single-module native Android application.
 
 **Performance Goals**: Keep the existing first-screen response and background
-work behavior. Package only six cropped/compressed AQI illustrations in the
-app; target a combined illustration payload below 1.5 MB. Fit the core dashboard
-at 360 × 800 dp and default font scale while allowing normal scrolling at larger
-font scales or smaller viewports.
+work behavior. Package six optimized full-poster AQI illustrations; target a
+combined illustration payload below 1.5 MB while keeping embedded text legible
+at the rendered size. Fit the core dashboard at 360 × 800 dp and default font
+scale while allowing normal scrolling at larger font scales or smaller
+viewports.
 
 **Constraints**: Preserve the zero-backend, non-commercial Open-Meteo use;
 required CAMS/Open-Meteo attribution and CC BY 4.0 credit; coarse foreground
@@ -48,8 +52,9 @@ existing AQI categories, estimate-age decisions, atomic DataStore updates, and
 alert behavior. Do not add dependencies or new persisted fields.
 
 **Scale/Scope**: One home screen, one location picker, Settings attribution
-entry, six category illustrations and recommendation pairs, launcher icon
-resources, and light/dark colors. No new service, data source, or module.
+entry, six full category infographics with matching accessible text semantics,
+launcher icon resources, and light/dark colors. No new service, data source, or
+module.
 
 ## Constitution Check
 
@@ -76,10 +81,10 @@ dependency, persisted model, backend, data request, or permission.
 ## Phase 0 Research
 
 Decisions and supporting references are recorded in [research.md](research.md).
-The key decisions are to reuse Compose Material 3 and existing state, provide
-full readable text independent of the illustration/gauge, keep the page
-scrollable, reuse the existing one-shot provider, and retain legally required
-data credit in Settings only.
+The key decisions are to reuse Compose Material 3 and existing state, present
+the complete category illustration as one card, keep matching app text for
+accessibility semantics, preserve a scrollable page, reuse the existing
+one-shot provider, and retain legally required data credit in Settings only.
 
 ## Phase 1 Design
 
@@ -89,6 +94,27 @@ data credit in Settings only.
   interface.
 - [quickstart.md](quickstart.md) lists build, test, emulator, accessibility, and
   launcher verification steps.
+
+## Follow-up Design Decision — 2026-10-11
+
+- Use each complete 1122 × 1402 supplied category poster as one dashboard
+  artwork card. At a 328 dp content width, the image is approximately 410 dp
+  tall and retains its complete category, AQI range, summary, cloud scene, and
+  three recommendations.
+- Keep the live AQI number, compact six-part gauge, freshness, monitoring
+  status, last-check time, refresh action, and general-guidance note as native
+  interface content. Remove the duplicate visible category heading and
+  separate recommendations panel.
+- Mirror the poster copy in app text or structured data for matching
+  accessibility semantics. Poster lettering remains fixed-size English text;
+  native interface text responds to font scaling, and scrolling remains
+  available on narrow, landscape, and enlarged-text layouts.
+- Keep the pale poster as a contained artwork card in dark appearance. Optimize
+  full images under the existing 1.5 MB combined target only while their text
+  stays legible.
+- Follow-up implementation work is tracked by T026–T030 in the task list. The
+  current implementation and historical validation record still refer to the
+  earlier crop-based version.
 
 ## Project Structure
 
@@ -117,12 +143,12 @@ app/src/main/
 │   ├── notifications/                  # remove US AQI qualifier from copy
 │   └── ui/
 │       ├── HomeScreen.kt               # dashboard composition
-│       ├── AqiPresentation.kt           # category art, colors, and guidance
+│       ├── AqiPresentation.kt           # category art, text semantics, and colors
 │       ├── LocationPicker.kt            # current location action and feedback
 │       ├── SettingsScreen.kt            # attribution entry
 │       └── theme/Theme.kt               # light/dark color schemes
 └── res/
-    ├── drawable-nodpi/                  # six optimized cloud crops
+    ├── drawable-nodpi/                  # six optimized full category infographics
     ├── mipmap-*/                        # legacy density launcher fallback
     ├── mipmap-anydpi-v26/               # adaptive launcher icon
     ├── drawable/                        # monochrome launcher layer

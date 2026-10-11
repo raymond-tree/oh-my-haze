@@ -15,9 +15,14 @@ Derived from the existing saved state at render time:
 - `locationLabel`: saved location label, or the existing not-set fallback.
 - `aqiValue`: `AirQualityEstimate.displayValue`.
 - `category`: existing `UsAqiCategory` classification and display name.
-- `illustration`: one of the six optimized supplied cloud-scene crops, mapped
-  one-to-one from category.
-- `recommendations`: two text messages selected from the same category mapping.
+- `illustration`: one of the six optimized, complete supplied category posters,
+  mapped one-to-one from category. The full image includes the cloud scene,
+  category name, AQI range, summary, and three recommendations.
+- `posterText`: matching app strings or structured presentation data for the
+  visible category name, range, summary, and recommendations, used for
+  accessibility semantics and consistency checks.
+- `recommendations`: the three messages embedded in the matching poster, kept
+  in sync with `posterText`.
 - `freshness`: `EstimateFreshness.displayStatus(modelValidAt, now)`; only its
   user-friendly status is rendered. The model timestamp remains internal.
 - `lastChecked`: `MonitoringState.lastSuccessfulCheckAt`, rendered as “Last
@@ -26,21 +31,27 @@ Derived from the existing saved state at render time:
   delayed-check threshold, shown separately from estimate freshness.
 - `checkError` and `notificationStatus`: existing status values where relevant.
 
-The AQI number, category, text label, freshness, and recommendations remain
-available as text. The image is decorative. A custom gauge exposes a single
-concise semantic description (value and category) and does not make six
-individually focusable color-only segments.
+The live AQI number, freshness, monitoring status, last-check time, and actions
+remain native interface content. The full poster is presented as one accessible
+group whose semantics expose the embedded category name, range, summary, and
+recommendations once; do not show or announce a duplicate category heading or
+recommendation panel. Keep the poster text mirrored in app resources or
+structured data. Its English typography is fixed in the image and does not
+respond to font scaling or localization; the native interface remains
+responsive and the poster remains reachable by scrolling. A custom gauge
+exposes one concise semantic category description instead of six individually
+focusable color-only segments. The general-guidance note remains native text.
 
 ### Category presentation mapping
 
 | Existing category | Display name | Asset | Guidance |
 |---|---|---|---|
-| GOOD | Good | Optimized Good cloud crop | 2 category-specific text messages |
-| MODERATE | Moderate | Optimized Moderate cloud crop | 2 category-specific text messages |
-| UNHEALTHY_FOR_SENSITIVE_GROUPS | Unhealthy for Sensitive Groups | Optimized USG cloud crop | 2 category-specific text messages |
-| UNHEALTHY | Unhealthy | Optimized Unhealthy cloud crop | 2 category-specific text messages |
-| VERY_UNHEALTHY | Very Unhealthy | Optimized Very Unhealthy cloud crop | 2 category-specific text messages |
-| HAZARDOUS | Hazardous | Optimized Hazardous cloud crop | 2 category-specific text messages |
+| GOOD | Good | Complete supplied Good poster | 3 matching app-text recommendations |
+| MODERATE | Moderate | Complete supplied Moderate poster | 3 matching app-text recommendations |
+| UNHEALTHY_FOR_SENSITIVE_GROUPS | Unhealthy for Sensitive Groups | Complete supplied Sensitive Groups poster | 3 matching app-text recommendations |
+| UNHEALTHY | Unhealthy | Complete supplied Unhealthy poster | 3 matching app-text recommendations |
+| VERY_UNHEALTHY | Very Unhealthy | Complete supplied Very Unhealthy poster | 3 matching app-text recommendations |
+| HAZARDOUS | Hazardous | Complete supplied Hazardous poster | 3 matching app-text recommendations |
 
 This mapping is presentation-only; all thresholds and category decisions
 remain in `monitoring/UsAqi.kt`.

@@ -35,3 +35,6 @@
   expand provider, account, map, or backend scope.
 - Particle-specific guidance is conditional because the current estimate does
   not identify its dominant pollutant.
+- Updated 2026-10-11 to use each full supplied AQI poster as one dashboard card,
+  with matching text semantics for accessibility. The revised specification is
+  ready for implementation; follow-up tasks T026–T030 remain open.

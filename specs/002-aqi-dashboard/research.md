@@ -24,33 +24,40 @@
 
 ### Category recommendations
 
-- Use two concise, text-based recommendations for each category, progressively
-  reducing the amount and intensity of outdoor activity as AQI rises.
-- Keep the recommendation for Good and Moderate levels reassuring and
-  proportionate; identify sensitive groups at the levels where the EPA guidance
-  does so.
-- Do not infer which pollutant drives the combined index. Any particle/smoke
-  advice must be conditional and say filtration or a well-fitting particulate
-  respirator can reduce exposure, not eliminate it.
-- Add one compact note that recommendations are general guidance and local
-  pollutant-specific health advice may differ.
+- Use the three recommendations already visible in each complete supplied
+  poster as the category-specific on-screen guidance. The poster replaces both
+  the cropped cloud image and the separate visible recommendations panel.
+- Keep matching category, range, summary, and recommendation strings in app
+  resources or structured presentation data so the image is not the only
+  accessible copy. The image semantics and matching text must expose each item
+  once, without a duplicate visible heading or recommendation list.
+- Review the embedded advice against FR-009 before release. If a line needs
+  revision, revise the poster and its matching app text together; do not leave
+  different visible and accessible wording.
+- Keep one compact native note below the artwork that identifies the advice as
+  general and says local pollutant-specific guidance may differ.
 
 **References**: [AirNow AQI Basics](https://www.airnow.gov/aqi/aqi-basics/), [US EPA Air Quality Guide for Particle Pollution (2024)](https://nepis.epa.gov/Exe/ZyPDF.cgi?Dockey=P1016PK7.pdf), [AirNow wildfire smoke guidance](https://www.airnow.gov/wildfires/when-smoke-is-in-the-air/).
 
 ### Compose layout and accessibility
 
-- Use the existing Compose Material 3 dependency and semantic text for the AQI
-  number, category, freshness state, and recommendations. Color and illustration
-  are supporting cues only.
+- Use the existing Compose Material 3 dependency. The numeric AQI value,
+  freshness, monitoring state, last-check time, and controls remain native text
+  and actions. The full category artwork exposes its category name, AQI range,
+  summary, and recommendations through one matching semantic description.
 - Keep the dashboard vertically scrollable. Compose's default interactive
   component semantics and adequate touch targets are preferred; any custom
   gauge exposes one concise category/value description instead of relying on
-  color alone. Decorative cloud art has no accessibility label.
-- Use normal `sp` typography with wrapping and a centered max-width content
-  column; do not constrain text to fixed-height boxes. Retain scrolling for
-  landscape, compact, and enlarged-font layouts.
+  color alone. Avoid announcing poster text twice.
+- Preserve the full portrait artwork at its aspect ratio. At 328 dp width it is
+  approximately 410 dp tall; use vertical scrolling on compact, landscape, and
+  enlarged-font layouts instead of cropping the artwork. Poster typography is
+  fixed-size English text and cannot scale or localize independently; native
+  interface text and controls continue to use scalable text.
 - Add light and dark Material 3 color schemes based on the system appearance.
-  AQI severity colors must maintain readable contrast in both.
+  The supplied artwork keeps its pale background as a contained card in dark
+  appearance; other text, controls, and AQI severity colors must remain
+  distinguishable in both themes.
 
 **References**: [Compose accessibility defaults](https://developer.android.com/develop/ui/compose/accessibility/api-defaults), [Compose semantics](https://developer.android.com/develop/ui/compose/accessibility/semantics), [Material 3 in Compose](https://developer.android.com/develop/ui/compose/designsystems/material3), [adaptive display sizes](https://developer.android.com/develop/adaptive-apps/guides/support-different-display-sizes).
 
@@ -60,11 +67,13 @@
   required legacy icon for API 24–25 and an adaptive icon for API 26+. Keep the
   cloud mark inside the adaptive safe area and put background art in its own
   layer. Add a simple monochrome cloud mark for supported themed launchers.
-- The six supplied AQI files are large infographics. Crop only their cloud
-  scenes, remove embedded category/recommendation text, resize, and encode as
-  WebP. Keep originals in `assets/` for provenance; package only optimized
-  derivatives.
-- Use `drawable-nodpi` for dashboard WebP assets because Compose controls their
+- Use the full 1122 × 1402 composition of each supplied AQI infographic,
+  retaining its cloud character, category, range, summary, and recommendations.
+  Keep originals in `assets/` for provenance and package optimized full-image
+  derivatives. The six original PNGs total 1,846,906 bytes; retain the plan's
+  1.5 MB package target only if the embedded copy remains legible after
+  optimization.
+- Use `drawable-nodpi` for dashboard image assets because Compose controls their
   rendered size. Do not add an icon or image dependency.
 
 **References**: [Android app icons](https://developer.android.com/studio/write/create-app-icons), [adaptive icon design](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive), [Android image density guidance](https://developer.android.com/training/multiscreen/screendensities), [Android drawable resources](https://developer.android.com/guide/topics/resources/drawable-resource).
@@ -88,5 +97,7 @@
   direction; retain timestamp use internally for freshness and alert safety.
 - **Add a chart, map, provider, or dependency**: outside the MVP and unnecessary
   for the dashboard or one-time location choice.
-- **Use the infographic poster unchanged**: embeds category and health copy that
-  can be clipped or contradict dynamic values and is not accessible as text.
+- **Use a cropped cloud scene with separate visible recommendations**: no longer
+  selected because it discards the supplied complete design and duplicates its
+  content model. The full poster is selected, with matching app text semantics
+  and copy review to address accessibility and consistency.

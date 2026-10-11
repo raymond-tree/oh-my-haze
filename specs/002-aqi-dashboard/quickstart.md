@@ -26,19 +26,26 @@ pending rather than implying it passed.
 
 1. Launch a saved-location build at 360 × 800 dp with default font size.
 2. Confirm the initial screen shows location, monitoring status, AQI value and
-   category, matching crop, accessible category gauge, two recommendations,
-   last-check state, and refresh action.
+   freshness, category gauge, full matching artwork, last-check state, and
+   refresh action. Confirm the AQI number remains live text outside the image.
 3. Exercise values around all six category boundaries: 0/50, 51/100, 101/150,
-   151/200, 201/300, and 301+. Confirm artwork and recommendation text match.
-4. Confirm the dashboard uses the label “AQI” and does not show a “US AQI”
+   151/200, 201/300, and 301+. Confirm the full artwork's category and range
+   agree with the current number and that the matching recommendations change.
+4. Confirm there is no separate visible category heading or recommendation
+   panel, and that one compact general-guidance note remains outside the image.
+5. Confirm the dashboard uses the label “AQI” and does not show a “US AQI”
    qualifier, source name/link, model-valid timestamp, or model update cadence.
-5. Verify no-estimate, older/stale estimate, delayed monitoring, and failed
+6. Verify no-estimate, older/stale estimate, delayed monitoring, and failed
    refresh states; freshness and monitoring delay remain separate.
-6. Inspect light/dark appearance, landscape, narrow width, and largest available
-   system font size. All content must remain reachable by scrolling without
-   clipping. Check TalkBack order, recommendation wording, icon semantics, and
-   touch targets.
-7. Open Settings > Data attribution. Confirm the short CAMS/Open-Meteo credit and
+7. Inspect light/dark appearance, landscape, narrow width, and largest available
+   system font size. The complete artwork must remain uncropped and reachable
+   by scrolling; native text and controls must respond to font scaling. Confirm
+   the image semantics expose its category, range, summary, and recommendations
+   once and match the app text resources.
+8. Check that the poster's embedded English text remains legible at the default
+   rendered size and does not duplicate the accessible announcement. In dark
+   mode, inspect the pale poster as an intentional contained card.
+9. Open Settings > Data attribution. Confirm the short CAMS/Open-Meteo credit and
    CC BY 4.0 link work.
 
 ## Manual location checks
@@ -62,13 +69,18 @@ pending rather than implying it passed.
 - API 26+: adaptive foreground/background mask correctly and preserve the cloud
   mark in the safe area.
 - Themed-icon launcher: monochrome cloud mark remains recognizable.
-- Dashboard cloud crops do not contain embedded captions or recommendations;
-  original user-supplied files remain under `assets/`, while only optimized
-  crops are packaged.
-- Verify the six packaged illustration resources together stay below the 1.5
-  MB budget in the plan.
+- Package the complete six AQI poster compositions from `assets/`; do not crop
+  out the category text or recommendations. Keep the supplied originals
+  unchanged and package only optimized full-image derivatives.
+- Keep all six full-image resources below the plan's 1.5 MB combined target
+  only if the smallest embedded text remains legible at its rendered size. If
+  that conflicts, revise the size target instead of degrading the text.
 
-## Validation record — 2026-10-11
+## Historical validation record — 2026-10-11
+
+This evidence is for the original crop-based implementation. The complete
+poster-card design above is a follow-up and has not yet been implemented or
+validated.
 
 - `./gradlew testDebugUnitTest connectedDebugAndroidTest assembleDebug` passed.
   The emulator suite ran 19 instrumentation tests on the Pixel_10a API 37 AVD.

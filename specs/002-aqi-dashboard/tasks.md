@@ -10,6 +10,11 @@ verification. Each story has focused checks for its observable behavior.
 **Organization**: Tasks are grouped by user story so each value increment can be
 reviewed separately. All stories are P1 in the approved specification.
 
+**Status note — 2026-10-11**: T001–T025 record the completed crop-based
+implementation. The user has since selected the complete supplied AQI artwork
+as the dashboard card; T026–T030 track that documentation-approved follow-up
+and remain unchecked until implemented and verified.
+
 ## Phase 1: User Story 1 — Compact AQI dashboard and supplied art (P1)
 
 **Goal**: Show location, monitoring state, AQI/category, matching art, gauge,
@@ -72,11 +77,31 @@ place intact.
 - [x] T024 Review `git diff --check`, feature artifacts, packaged asset size, and all user-facing AQI/source/model wording; update `/Users/raincloudmarketing/Documents/Codex/local-agent-context/SESSION.md` without replacing unrelated notes.
 - [x] T025 Commit the completed MVP iteration on `codex/aqi-dashboard`; do not merge.
 
+## Phase 5: Follow-up — Full AQI artwork cards
+
+**Goal**: Replace the cropped cloud thumbnail and separate recommendation panel
+with the complete matching supplied poster, while preserving dynamic AQI data,
+accessible text, and the existing monitoring behavior.
+
+**Independent Test**: Show each AQI category at its range boundaries. Confirm
+the complete matching artwork agrees with the live number and gauge, advice is
+not duplicated in a separate visible panel, its text is exposed once through
+accessibility semantics, and the standard portrait layout remains usable.
+
+- [ ] T026 [US1] Add Compose and presentation-mapping assertions for full-poster category selection, no duplicate visible category/recommendation panel, and preserved live AQI/status behavior in `app/src/androidTest/java/com/ohmyhaze/ui/HomeScreenRefreshTest.kt` and `app/src/test/java/com/ohmyhaze/ui/AqiPresentationTest.kt`.
+- [ ] T027 [US1] Generate optimized full-composition derivatives for all six supplied AQI posters in `app/src/main/res/drawable-nodpi/`, preserving all embedded text and checking legibility at the target rendered size; keep the originals in `assets/`.
+- [ ] T028 [US1] Replace the cropped illustration and separate visible recommendation panel with the complete category artwork in `app/src/main/java/com/ohmyhaze/ui/HomeScreen.kt` and `app/src/main/java/com/ohmyhaze/ui/AqiPresentation.kt`, preserving the live AQI value, gauge, freshness, status, last-check time, refresh action, and general-guidance note.
+- [ ] T029 [US2] Mirror each poster's category, range, summary, and three recommendations in app text or structured presentation data, expose matching accessible semantics once, and audit embedded wording against FR-009 in `app/src/main/java/com/ohmyhaze/ui/AqiPresentation.kt` and `app/src/main/res/values/strings.xml`; revise the corresponding poster and text together if needed.
+- [ ] T030 [US1] Run the focused dashboard and presentation tests, verify the six complete images and combined package size, and record 360 × 800 dp, dark-mode, narrow, landscape, and enlarged-font results in `specs/002-aqi-dashboard/quickstart.md`.
+
 ## Dependencies and order
 
 - User Story 1 precedes User Story 2 because both add dashboard presentation and
   share the category mapping and home screen. User Story 3 follows because it
   changes the existing location picker and activity routing independently.
+- T026–T030 are a later dashboard-art follow-up; they reuse the completed
+  category, monitoring, location, and attribution work and do not change AQI
+  calculations or location behavior.
 - Focused tests cover category mapping, all six guidance levels, location
   picker interaction, permission denial, and the existing response-revision
   protection.
