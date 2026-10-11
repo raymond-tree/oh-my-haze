@@ -1,7 +1,7 @@
 # Quickstart: Haze Monitoring MVP
 
-This guide describes how to validate the implementation after it is built. It
-does not imply application code or a runnable Android project exists yet.
+This guide describes how to build and validate the current Android MVP
+implementation and the remaining physical-device checks.
 
 ## Implementation Prerequisites
 
@@ -14,15 +14,15 @@ does not imply application code or a runnable Android project exists yet.
 - No Open-Meteo API key, backend, account, paid geocoding service, map key, or
   test account is required.
 
-The selected minimum is API 24 (Android 7.0), matching the current stable
-WorkManager 2.12.0 requirement checked during planning. Recheck dependency and
-SDK requirements before implementation. Android Auto Backup includes internal
-files by default; verify backup rules exclude saved coordinates from both cloud
-backup and device-to-device transfer.
+The selected minimum is API 24 (Android 7.0), matching WorkManager 2.12.0.
+The build enables Java-time core-library desugaring so timestamp handling also
+works on API 24–25. Android Auto Backup includes internal files by default;
+the app's backup rules exclude saved coordinates from cloud backup and
+device-to-device transfer.
 
 ## Build and Local Checks
 
-Once the Android project and wrapper exist, run:
+Run from the repository root:
 
 ```bash
 ./gradlew assembleDebug
@@ -32,17 +32,23 @@ Once the Android project and wrapper exist, run:
 Expected results:
 
 - Debug APK assembles without provider secrets or an app server.
-- Unit tests cover AQI rounding/categories, time parsing/freshness, invalid
-  response rejection, separate 12-hour alert eligibility and 18-hour display
-  freshness, silent baseline establishment/expiry, upward threshold crossings,
-  recovery/rearming, duplicate suppression, superseded-response rejection, and
-  permission-denied suppression without catch-up.
+- Unit tests cover AQI rounding/categories, separate 12-hour alert eligibility
+  and 18-hour display freshness, silent baseline establishment/expiry, all
+  four upward alert floors, recovery/rearming, duplicate suppression,
+  no-catch-up behavior, request coalescing, and superseded-response rejection.
 
 For instrumentation checks with a connected device/emulator:
 
 ```bash
 ./gradlew connectedDebugAndroidTest
 ```
+
+The instrumented suite also verifies the WorkManager schedule, onboarding and
+settings controls, and the Open-Meteo HTTPS query contract and response parsing
+through Android's platform JSON implementation, including missing/malformed
+values, HTTP errors, timezone, Unix model time, and future timestamps. API
+responses in parser tests use a fake connection; the suite does not depend on
+live provider access.
 
 ## Onboarding and Location Checks
 
@@ -183,6 +189,35 @@ later eligible recovery below and upward recrossing of that floor.
   used.
 - Verify a manual refresh returns a clear result within 10 seconds in controlled
   connected cases, and errors preserve the last valid estimate.
+
+### Private manual test on the connected Realme
+
+The owner will operate the realme RMX5000 (API 36) directly; phone mirroring is
+off. Android Studio detects it; although the first installation attempt timed
+out, the owner subsequently confirmed that the app opens on 2026-10-11.
+Installation and launch are verified by that report. Record any error text
+from the remaining checks; no screenshot is required. Build success alone
+does not prove a passed device test.
+
+Use **Choose a place manually → Kuala Lumpur → Save this location** for the
+controlled live request, keeping personal coordinates out of the test report.
+Record pass/fail and brief observations for these checks:
+
+| Check | Action and expected result | Result |
+|---|---|---|
+| Install and live estimate | App opens; manual locality setup displays US AQI, model-valid time, and last successful check separately. First reading produces no alert. | Owner confirmed launch and all three estimate fields, 2026-10-11; first-reading notification behavior pending |
+| Manual refresh and failure | With internet, Refresh now returns within 10 seconds in controlled conditions. Temporarily disconnect, refresh, and confirm a clear failure preserves the last estimate; restore connectivity. | Pass by owner report, 2026-10-11: connected check within 10 seconds; offline error preserves last estimate |
+| Saved location and settings | Change monitoring location to another bundled locality; confirm the location changes. Change a setting, close and reopen the app, and confirm both persist. Restore automatic monitoring, app alerts, and the 101 default afterward. | Pass by owner report, 2026-10-11: changed location and 151 sensitivity persist after removal from Recent apps/reopen; restoration to defaults not separately confirmed |
+| Notification availability | Deny, grant, revoke, and restore Android notification permission; also disable and restore the alert channel. The app reports availability correctly; restoration alone sends no catch-up alert. | Partial pass by owner report, 2026-10-11: app-wide disable/restore shows Unavailable → Available, no immediate catch-up alert; initial permission dialog pending; channel-only check skipped at owner's request, unverified |
+| OEM background behavior | With monitoring enabled and internet available, note the last successful check, leave the app in the background with the screen off, and check after more than two hours. Repeat with battery saver and after reboot. Record check times and any delay warning; exact hourly execution is not required. Swiping away and Android force-stop are different actions. | Partial pass by owner report, 2026-10-11 MYT: app closed/screen locked around 2pm+, Last successful check advanced to around 4pm+. Exact interval, battery mode, and delay warning not recorded; reboot deferred by owner; Doze and battery-saver checks unverified |
+| Foreground location permission | When testing this path privately, choose approximate foreground access, save a fix, then revoke location permission. Saved-location monitoring still works; no background-location request appears. Do not include coordinates in the report. | Pending |
+
+Record the date, phone Android/ColorOS version, battery mode, and observations.
+A screen-off interval alone does not establish that Android entered Doze;
+record Doze as unverified unless independently confirmed. Live unchanged AQI
+cannot prove alert crossing/rearming behavior; the deterministic suite covers
+those rules. The Realme can provide OEM-device evidence, while API 24 and the
+separate Pixel/AOSP physical-device checks remain required for T027.
 
 ## Release Gate
 

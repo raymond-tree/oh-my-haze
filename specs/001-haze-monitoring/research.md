@@ -1,6 +1,6 @@
 # Current Phase 0 Research: Open-Meteo Air Quality API
 
-**Checked**: 2026-10-10 (UTC; client timezone Asia/Kuala_Lumpur)
+**Checked**: 2026-10-11 (UTC; client timezone Asia/Kuala_Lumpur; terms rechecked)
 **Decision**: **FEASIBLE for the approved non-commercial MVP, with documented
 limitations.** The old DOE APIMS source investigation remains below as
 historical research and is superseded for the MVP.
@@ -166,6 +166,21 @@ for alert state.
   Open-Meteo; the provider's [privacy terms](https://open-meteo.com/en/terms)
   state that free-service troubleshooting logs may contain coordinates and IP
   addresses for up to 90 days. This must be disclosed before first request.
+- **Terms recheck (2026-10-11)**: The current official [Terms](https://open-meteo.com/en/terms)
+  still permit anonymous free API access only for non-commercial use and list
+  fewer than 10,000 calls/day, 5,000/hour, and 600/minute. The official
+  [pricing page](https://open-meteo.com/en/pricing) also states a 10,000-call
+  daily limit and no uptime guarantee. At one scheduled request/hour, 416
+  continuously active installations would use about 9,984 calls/day before
+  manual checks. Provider documentation does not clearly state how a mobile
+  app's fleet is pooled or counted, so broad-release volume requires a fresh
+  capacity review. This confirms feasibility for the approved small,
+  strictly non-commercial MVP, not unrestricted or guaranteed access.
+- **Service-status recheck (2026-10-11)**: The public [status report](https://status.open-meteo.com/)
+  showed no current announcements, but did not expose a readable Air Quality
+  API-specific uptime result during this check. This is not evidence of an
+  uptime guarantee; treat API availability as best-effort and verify again
+  before a broad release.
 - **Local backup**: Android Auto Backup includes most internal app files by
   default for apps targeting API 23+ and supports explicit inclusion/exclusion
   rules. Since saved coordinates must not transfer through cloud backup or
@@ -190,9 +205,9 @@ for alert state.
 
 - The AndroidX [WorkManager release notes](https://developer.android.com/jetpack/androidx/releases/work)
   list version 2.12.0 as stable on 2026-09-23 and raise the library's minimum
-  SDK to API 24. API 24 (Android 7.0) is therefore the practical MVP floor if
-  the project uses the current stable WorkManager dependency; recheck at
-  implementation time.
+  SDK to API 24. The implementation uses that version and sets API 24
+  (Android 7.0) as its minimum; core-library desugaring covers `java.time` on
+  API 24–25.
 - Android [periodic work](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
   is deferrable and inexact. WorkManager satisfies persistent best-effort
   scheduling but cannot guarantee an hourly check time or alert SLA.

@@ -69,4 +69,6 @@ satisfied; it does not mean implementation work is complete.
 - Open-Meteo free-tier use is non-commercial only. The user confirmed the
   intended app is non-commercial; a future commercial or promotional purpose
   requires a new provider and architecture review.
-- No implementation code or task list has been created.
+- The task list has now been generated from the approved planning artifacts.
+  Implementation is tracked separately by the task checkboxes; this checklist
+  records specification quality rather than implementation completion.

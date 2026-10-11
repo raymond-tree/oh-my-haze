@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Oh My Haze</string>
+    <string name="onboarding_title">Choose your monitoring location</string>
+    <string name="onboarding_intro">Oh My Haze checks model-based US AQI estimates for one place you choose. It saves that place and does not track your movements. These are regional estimates, not measurements taken at your exact location.</string>
+    <string name="hourly_check_explanation">Air quality is checked approximately every hour. Android battery settings may delay or occasionally prevent checks and alerts.</string>
+    <string name="location_privacy_disclosure">Your saved coordinates are sent directly to Open-Meteo for each check. Open-Meteo may log coordinates and your network IP. Oh My Haze has no account or backend.</string>
+</resources>

@@ -1,6 +1,6 @@
 # Implementation Plan: Haze Monitoring MVP
 
-**Branch**: `spec` | **Date**: 2026-10-10 | **Spec**: [spec.md](spec.md)
+**Branch**: `main` | **Date**: 2026-10-11 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/001-haze-monitoring/spec.md`
 
@@ -17,30 +17,33 @@ Open-Meteo and CAMS, and show delayed or unavailable monitoring honestly.
 
 ## Technical Context
 
-**Language/Version**: Kotlin; choose the current stable Kotlin and Android Gradle
-Plugin versions when implementation begins.
+**Language/Version**: Kotlin 2.4.21; Android Gradle Plugin 9.2.1; compile/target
+SDK 37, minSdk 24. These are the versions configured in the current project.
 
-**Primary Dependencies**: Jetpack Compose; WorkManager 2.12.0 (current stable,
-minSdk 24); Preferences DataStore; Google Play services fused location provider
-for one bounded foreground location fix on API 24+; platform `HttpURLConnection`
-and `org.json` to avoid a separate HTTP or JSON library. Recheck versions before
-implementation.
+**Primary Dependencies**: Jetpack Compose BOM 2026.09.00; WorkManager 2.12.0;
+Preferences DataStore 1.2.1; Google Play services fused location provider
+21.4.0 for one bounded foreground location fix; platform `HttpURLConnection`
+and `org.json`; Java-time core-library desugaring for API 24–25. Instrumented
+tests use UI Automator 2.4.0 and Compose UI tests with Espresso 3.7.0. These are
+the versions configured in the current project; recheck before release.
 
 **Storage**: One Preferences DataStore for the saved monitoring location,
 preferences, latest valid estimate, check status, and alert baseline/state. No
 Room or remote database. Exclude the DataStore file containing coordinates from
 Android cloud backup and device-to-device transfer.
 
-**Testing**: Local unit tests for US AQI rounding/category boundaries, timestamp
-parsing and separate 12-hour alert eligibility/18-hour display freshness,
-malformed-value rejection, baseline expiry, sensitivity floors, threshold
-rearming, duplicate/catch-up suppression, and superseded-response rejection.
-Android tests for permission and UI states. Validate background scheduling on
-physical devices; emulators alone cannot represent OEM battery policies.
+**Testing**: Local unit tests for US AQI rounding/category boundaries, separate
+12-hour alert eligibility/18-hour display freshness, baseline expiry,
+sensitivity floors, threshold rearming, duplicate/catch-up suppression, and
+superseded-response rejection and same-revision request coalescing. Instrumented
+Android tests exercise the platform JSON parser and HTTP response contract,
+WorkManager scheduling, Compose refresh states, settings controls, and
+permission paths. Validate background scheduling on physical devices; emulators
+alone cannot represent OEM battery policies.
 
-**Target Platform**: Native Android, minSdk 24 (Android 7.0). Use the current
-target/compile SDK required at implementation and release. Request notification
-permission in context on Android 13+.
+**Target Platform**: Native Android, minSdk 24 (Android 7.0), compile/target SDK
+37 in the current project. Request notification permission in context on
+Android 13+.
 
 **Project Type**: Single-module Android mobile application.
 
@@ -190,10 +193,10 @@ specs/001-haze-monitoring/
 ├── quickstart.md
 ├── contracts/
 │   └── open-meteo-air-quality.md
-└── tasks.md                # Not created by planning; /speckit.tasks is next
+└── tasks.md                # Generated from the approved design documents
 ```
 
-### Source Code (proposed; no application code created in this planning task)
+### Source Code (current single-module implementation)
 
 ```text
 app/
@@ -205,8 +208,8 @@ app/
 │   ├── monitoring/           # One worker and pure estimate/alert decisions
 │   ├── notifications/        # Local notification channel and tap routing
 │   └── ui/                   # Compose home, onboarding, and settings
-├── src/test/java/<package>/  # Pure classification/alert/parser tests
-└── src/androidTest/java/<package>/ # Permission and UI-state checks
+├── src/test/java/<package>/ # Pure classification/alert/state tests
+└── src/androidTest/java/<package>/ # Platform JSON, permission, and UI checks
 ```
 
 **Structure Decision**: One conventional Android `app` module. Keep components
