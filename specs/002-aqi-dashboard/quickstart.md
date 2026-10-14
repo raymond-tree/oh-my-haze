@@ -50,18 +50,6 @@ pending rather than implying it passed.
 9. Open Settings > Data attribution. Confirm the short CAMS/Open-Meteo credit and
    CC BY 4.0 link work.
 
-## Debug APK notification check
-
-- In a debug APK only, open the Home screen and tap the full AQI poster with
-  two fingers at the same time three times. This posts a clearly
-  labeled test notification through the app's normal Android notification
-  channel.
-- If no notification appears, check Settings > App alerts and Android
-  notification availability, then check Android's Oh My Haze notification
-  settings. The gesture reports when Android is blocking notifications.
-- This debug gesture does not fetch AQI data or change the saved estimate or
-  alert baseline. Release builds omit the gesture and test notification.
-
 ## Manual location checks
 
 1. Open location change from both Home and Settings. Verify “Use my current

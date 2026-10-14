@@ -5,7 +5,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -27,7 +26,6 @@ import com.ohmyhaze.data.LocationSelectionSource
 import com.ohmyhaze.data.MonitoringState
 import com.ohmyhaze.data.MonitoringStateStore
 import com.ohmyhaze.data.SavedMonitoringLocation
-import com.ohmyhaze.debug.postDebugTestNotification
 import com.ohmyhaze.location.CurrentLocationProvider
 import com.ohmyhaze.ui.HomeScreen
 import com.ohmyhaze.ui.LocationPicker
@@ -208,7 +206,9 @@ private fun OhMyHazeApp(
                         showLocationPicker = true
                     },
                     onRequestNotificationPermission = {
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
                     },
                     onBack = { showSettings = false },
                 )
@@ -228,16 +228,6 @@ private fun OhMyHazeApp(
                         app.monitoringScheduler.enqueueManualCheck()
                     },
                     onOpenSettings = { showSettings = true },
-                    onTestAlert = {
-                        val posted = state.notificationsEnabled &&
-                            postDebugTestNotification(context, savedLocation.label)
-                        val message = when {
-                            !state.notificationsEnabled -> "Turn on App alerts in Oh My Haze settings first."
-                            posted -> "Test alert sent"
-                            else -> "Notifications are blocked. Check Oh My Haze in Android settings."
-                        }
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                    },
                     isRefreshing = manualRefreshInProgress,
                     notificationsAvailable = notificationAvailable,
                 )

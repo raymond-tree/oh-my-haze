@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.ohmyhaze.debug.withHiddenTestNotificationGesture
 import com.ohmyhaze.R
 import com.ohmyhaze.data.CheckStatus
 import com.ohmyhaze.data.MonitoringState
@@ -52,7 +51,6 @@ fun HomeScreen(
     onChangeLocation: () -> Unit,
     onRefresh: () -> Unit,
     onOpenSettings: () -> Unit,
-    onTestAlert: () -> Unit = {},
     isRefreshing: Boolean,
     notificationsAvailable: Boolean,
 ) {
@@ -137,8 +135,7 @@ fun HomeScreen(
                         presentation,
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
-                            .align(Alignment.CenterHorizontally)
-                            .withHiddenTestNotificationGesture(onTestAlert),
+                            .align(Alignment.CenterHorizontally),
                     )
                     Text(
                         stringResource(R.string.recommendation_general_note),
